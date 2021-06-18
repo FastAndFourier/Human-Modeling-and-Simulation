@@ -1,70 +1,119 @@
 from Grid import *
 import numpy as np
 
-def boltz_rational(grid_,tau):
 
-    v_vector = np.zeros((grid_.size[1]*grid_.size[0]))
+def value_iterate(env):
+    v_vector = np.zeros((env.size[1]*env.size[0]))
 
-    err=10
-    while err>0.5:
-        v_temp = np.copy(v_vector)
-        for s in range(grid_.size[0]*grid_.size[1]):
-            grid_.reset(sub2ind(grid_.size[1],s))
-            x = np.zeros(4)
-            vs_sum=0
+    theta=1
+    err=2
+
+    #for k in range(2):
+    while err>theta:
+        err=0
+
+        for s in range(env.size[0]*env.size[1]):
+            if s == ind2sub(env.size[1],env.end):
+                pass
+            else:
+                env.reset(sub2ind(env.size[1],s))
+                v_temp = np.copy(v_vector)
+                v = v_vector[s]
+                action = np.argmax(env.q_table[:,s])
+                [new_s,reward,done] = env.step(action)
+                if new_s!=env.state:
+                    v_vector[s] = reward + env.discount*v_temp[ind2sub(env.size[1],new_s)]
+
+                err = max(err,abs(v_vector[s]-v))
+
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+    return v_vector
+
+def boltz_rational(env,beta):
+
+    v_vector = np.zeros((env.size[1]*env.size[0]))
+
+    theta=1
+    err=2
+
+    while err>theta:
+
+        err=0
+
+        for s in range(env.size[0]*env.size[1]):
+            if s == ind2sub(env.size[1],env.end):
+                pass
+            env.reset(sub2ind(env.size[1],s))
+            v_temp = np.copy(v_vector)
+            v = v_vector[s]
+            x = []
             for a in range(4):
-                [new_s,r,done] = grid_.step(a)
+                [new_s,reward,done] = env.step(a)
+                if new_s!=env.state:
+                    x.append(reward + env.discount*v_temp[ind2sub(env.size[1],new_s)])
+                else:
+                    x.append(0)
+            x = np.array(x)
+            v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
+            err = max(err,abs(v_vector[s]-v))
 
-                if sub2ind(grid_.size[1],s)==grid_.end:
-                    s_ = sub2ind(grid_.size[1],s)
-                    new_s = s_
-                    if a==0 and s_[0]-1>=0: #North
-                        new_s[0]-=1
-                    elif a==1 and s_[1]-1>=0: #West
-                        new_s[1]-=1
-                    elif a==2 and s_[0]+1<grid_.size[0]:#South
-                        new_s[0]+=1
-                    elif a==3 and s_[1]+1<grid_.size[1]:#East
-                        new_s[1]+=1
-                    #print(new_s)
-                    r = grid_.tab[new_s[0],new_s[1]]
-
-                if new_s!=sub2ind(grid_.size[1],s):
-                    x[a] = r + grid_.discount*v_temp[ind2sub(grid_.size[1],new_s)]
-
-
-            #print(x)
-
-            #x = x+grid_.discount*sum_vs1
-            v_vector[s] = max(x)#np.sum(x*np.exp(x/tau))/np.sum(np.exp(x/tau))
-        err=np.mean(v_vector-v_temp)
-
-
-        #print(v_vector.reshape(grid_.size))
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
     return v_vector
-    """
-    for s1 in range(grid_.size[0]*grid_.size[1]):
 
 
-        new_state = grid_.state
-        reward=0
-        it=0
-        while grid_.state != s1 and it<10:
-            action = np.argmax(grid_.q_table[:,ind2sub(grid_.size[1],new_state)])
-            [new_state,r,done] = grid_.step(action)
-            #print(new_state)
-            reward +=  r
-            grid_.state = new_state
-            it+=1
+def prospect_bias(env,c):
+    v_vector = np.zeros((env.size[1]*env.size[0]))
 
-        print(reward)
-    """
+    theta=1
+    err=2
 
-    """
-    for k in range(np.size(v_vector)):
-        v_vector[k] = np.max(grid_.q_table[:,k])
+    while err>theta:
+        err=0
 
+        for s in range(env.size[0]*env.size[1]):
+            if s == ind2sub(env.size[1],env.end):
+                pass
+            else:
+                env.reset(sub2ind(env.size[1],s))
+                v_temp = np.copy(v_vector)
+                v = v_vector[s]
+                action = np.argmax(env.q_table[:,s])
+                [new_s,reward,done] = env.step(action)
 
+                if reward > 0:
+                    reward = np.log(1+abs(reward))
+                elif reward==0:
+                    reward = 0
+                else:
+                    reward = -c*np.log(1+abs(reward))
 
+                if new_s!=env.state:
+                    v_vector[s] = reward + env.discount*v_temp[ind2sub(env.size[1],new_s)]
+
+                err = max(err,abs(v_vector[s]-v))
+
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
     return v_vector
-    """
+
+def generate_traj_v(env,v,start_):
+
+    done=False
+    env.reset(start_)
+    it=0
+    action_ = []
+
+    while not(done) and it<100:
+        if env.start == env.end:
+            break
+
+        v_choice = []
+        for a in range(4):
+            [ns,r,done] = env.step(a)
+            v_choice.append(r + env.discount*v[ind2sub(env.size[1],ns)])
+
+        action = np.argmax(v_choice)
+        [new_s,reward,done] = env.step(action)
+        env.state = new_s
+        it+=1
+        action_.append(action)
+    print("Start ",env.start,"->",it,"iterations",action2str(action_))

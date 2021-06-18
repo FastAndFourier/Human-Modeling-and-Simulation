@@ -31,7 +31,7 @@ class grid:
     def __init__(self,s):
         #Initialization of the grid environment and the q_learning objects and parameters
         self.size = s
-        self.tab = np.zeros((self.size[0],self.size[1]))
+        self.tab = -np.ones((self.size[0],self.size[1]))#np.zeros((self.size[0],self.size[1]))
         self.start = [0,0]
         self.end = [self.size[0],self.size[1]]
         self.state = self.start
@@ -54,13 +54,13 @@ class grid:
 
     def add_safe(self,s):
         if not(s==self.start):
-            self.tab[s[0],s[1]] = 0
+            self.tab[s[0],s[1]] = -1 #0
         else:
             print("This position corresponds to the starting point!")
 
     def add_danger(self,s):
         if not(s==self.start):
-            self.tab[s[0],s[1]] = -2
+            self.tab[s[0],s[1]] = -10#-2
         else:
             print("This position corresponds to the starting point!")
 
@@ -114,7 +114,7 @@ class grid:
                     print("-",end="   ")
                 elif self.tab[i,j]==10:
                     print("0",end="   ")
-                elif self.tab[i,j]==0:
+                elif self.tab[i,j]==-1:#0:
                     print("x",end="   ")
                 else:
                     print("!",end="   ")
@@ -180,6 +180,3 @@ class grid:
 
 
         return n_step, err_
-
-
-    

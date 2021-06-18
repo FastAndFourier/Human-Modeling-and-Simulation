@@ -23,7 +23,7 @@ def boltz_rational_noisy(grid_,tau,n,start_):
             grid_.state=new_state
             a[demo].append(noisy_behaviour)
         a[demo] = np.array(a[demo])
-        grid_.reset(grid_.start)
+        grid_.reset(start_)
     return a, grid_.start
 
 
