@@ -39,13 +39,15 @@ class grid:
         self.discount=0.99
         self.lr = 0.1
         self.epsilon=0.1
-
+        self.value_end = 10
+        self.value_danger = -10
+        self.value_safe = -1
 
 
     ## Creation of the maze ##
     def add_end(self,s):
         if not(s==self.start):
-            self.tab[s[0],s[1]] = 10
+            self.tab[s[0],s[1]] = self.value_end
             self.end = s
 
         else:
@@ -54,13 +56,13 @@ class grid:
 
     def add_safe(self,s):
         if not(s==self.start):
-            self.tab[s[0],s[1]] = -1 #0
+            self.tab[s[0],s[1]] = self.value_safe
         else:
             print("This position corresponds to the starting point!")
 
     def add_danger(self,s):
         if not(s==self.start):
-            self.tab[s[0],s[1]] = -10#-2
+            self.tab[s[0],s[1]] = self.value_danger
         else:
             print("This position corresponds to the starting point!")
 
@@ -112,9 +114,9 @@ class grid:
                     print("@",end="   ")
                 elif (np.array([i,j])==self.start).all():
                     print("-",end="   ")
-                elif self.tab[i,j]==10:
+                elif (np.array([i,j])==self.end).all():
                     print("0",end="   ")
-                elif self.tab[i,j]==-1:#0:
+                elif self.tab[i,j]==self.value_safe:#0:
                     print("x",end="   ")
                 else:
                     print("!",end="   ")
