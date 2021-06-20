@@ -31,7 +31,8 @@ def value_iterate(env):
 
 def boltz_rational(env,beta):
 
-    v_vector = np.zeros((env.size[1]*env.size[0]))
+    v_vector = np.random.rand(env.size[1]*env.size[0])
+    #v_vector = np.zeros((env.size[1]*env.size[0]))
 
     theta=1
     err=2
@@ -62,7 +63,8 @@ def boltz_rational(env,beta):
 
 
 def prospect_bias(env,c):
-    v_vector = np.zeros((env.size[1]*env.size[0]))
+    v_vector = np.random.rand(env.size[1]*env.size[0])
+    #np.zeros((env.size[1]*env.size[0]))
 
     theta=1
     err=2
@@ -89,6 +91,41 @@ def prospect_bias(env,c):
 
                 if new_s!=env.state:
                     v_vector[s] = reward + env.discount*v_temp[ind2sub(env.size[1],new_s)]
+                #else :
+                    #v_vector[s] = env.discount*v_temp[ind2sub(env.size[1],new_s)]
+
+                err = max(err,abs(v_vector[s]-v))
+
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+    return v_vector
+
+
+def extremal(env,alpha):
+
+    v_vector = np.random.rand(env.size[0]*env.size[1])
+
+    theta=1
+    err=2
+
+    while err>theta:
+        err=0
+
+        for s in range(env.size[0]*env.size[1]):
+            if s == ind2sub(env.size[1],env.end):
+                pass
+            else:
+                env.reset(sub2ind(env.size[1],s))
+                v_temp = np.copy(v_vector)
+                v = v_vector[s]
+                action = np.argmax(env.q_table[:,s])
+                [new_s,reward,done] = env.step(action)
+
+                reward = max(reward,(1-alpha)*reward + alpha*v_temp[ind2sub(env.size[1],new_s)])
+
+                if new_s!=env.state:
+                    v_vector[s] = reward + env.discount*v_temp[ind2sub(env.size[1],new_s)]
+                #else :
+                    #v_vector[s] = env.discount*v_temp[ind2sub(env.size[1],new_s)]
 
                 err = max(err,abs(v_vector[s]-v))
 
