@@ -69,22 +69,22 @@ generate_traj_v(grid1,vP1,[0,0])
 print("\n\nCréation de l'environment 3 ...\n")
 
 grid2 = grid([5,5])
-grid2.add_end([4,4])
-for i in range(1,4):
-    for j in range(1,4):
+grid2.add_end([1,4])
+for i in [1,2]:
+    for j in [1,2]:
         grid2.add_danger([i,j])
-
 grid2.add_danger([0,1])
-grid2.add_danger([4,1])
-grid2.add_danger([4,2])
+grid2.add_danger([3,1])
 grid2.add_danger([4,3])
 grid2.print_env()
 
-step_, err_ = grid2.q_learning(100,20001)
+step_, err_ = grid2.q_learning(200,50001)
+
+
 
 print("\nExtremal :")
 vE = extremal(grid2,0)
-vE1 = extremal(grid2,1)
+vE1 = extremal(grid2,0.25)
 print("\n")
 generate_traj_v(grid2,vE,[0,0])
 generate_traj_v(grid2,vE1,[0,0])

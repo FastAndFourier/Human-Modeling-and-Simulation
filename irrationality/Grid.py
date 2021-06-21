@@ -31,7 +31,10 @@ class grid:
     def __init__(self,s):
         #Initialization of the grid environment and the q_learning objects and parameters
         self.size = s
-        self.tab = -np.ones((self.size[0],self.size[1]))#np.zeros((self.size[0],self.size[1]))
+        self.value_end = 10
+        self.value_danger = -10
+        self.value_safe = -1
+        self.tab = self.value_safe*np.ones((self.size[0],self.size[1]))#np.zeros((self.size[0],self.size[1]))
         self.start = [0,0]
         self.end = [self.size[0],self.size[1]]
         self.state = self.start
@@ -39,9 +42,7 @@ class grid:
         self.discount=0.99
         self.lr = 0.1
         self.epsilon=0.1
-        self.value_end = 10
-        self.value_danger = -10
-        self.value_safe = -1
+
 
 
     ## Creation of the maze ##
