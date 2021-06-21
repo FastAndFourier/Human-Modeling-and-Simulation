@@ -1,6 +1,4 @@
-
-
-from Grid import *
+import irrationality.Grid
 
 ## Noisily-rational behaviour generation ##
 

@@ -1,4 +1,4 @@
-from Grid import *
+import irrationality.Grid
 import numpy as np
 
 
