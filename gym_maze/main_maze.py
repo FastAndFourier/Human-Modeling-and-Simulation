@@ -12,6 +12,41 @@ from tqdm import tqdm
 import time
 
 
+################# HELPER FUNCTIONS #############################################
+
+def action2str(demo):
+
+    #Turn action index into str
+    res=[]
+    for i in demo:
+        if i==0:
+            res.append("North")
+        elif i==1:
+            res.append("South")
+        elif i==2:
+            res.append("East")
+        else :
+            res.append("West")
+
+    return res
+
+def state_to_bucket(state):
+    bucket_indice = []
+    for i in range(len(state)):
+        if state[i] <= STATE_BOUNDS[i][0]:
+            bucket_index = 0
+        elif state[i] >= STATE_BOUNDS[i][1]:
+            bucket_index = NUM_BUCKETS[i] - 1
+        else:
+            # Mapping the state bounds to the bucket array
+            bound_width = STATE_BOUNDS[i][1] - STATE_BOUNDS[i][0]
+            offset = (NUM_BUCKETS[i]-1)*STATE_BOUNDS[i][0]/bound_width
+            scaling = (NUM_BUCKETS[i]-1)/bound_width
+            bucket_index = int(round(scaling*state[i] - offset))
+        bucket_indice.append(bucket_index)
+    return tuple(bucket_indice)
+
+############################ Q-LEARNING ########################################
 
 def simulate():
 
@@ -26,12 +61,13 @@ def simulate():
         state = state_to_bucket(obv)
 
         if e%1000==0:
+            print(get_epsilon(e))
             print("Episode #",e,"(",reach,")")
 
         for k in range(MAX_STEP):
 
-
-            action = select_action(state,q_table)
+            epsi = get_epsilon(e)
+            action = select_action(state,q_table,epsi)
             new_s, reward, done, _ = env.step(action)
             new_s = state_to_bucket(new_s)
             update_q(q_table,action,state,new_s,reward,done)
@@ -72,8 +108,13 @@ def update_q(q,a,s,s1,r,done):
     q[s+(a,)] += LR*td
 
 
-def select_action(state,q):
+def get_epsilon(e):
+
+    return max(EPSILON,0.1 - e*EPSILON/(MAX_EPISODE*0.60))
+
+def select_action(state,q,e):
     e = np.random.rand(1)[0]
+    epsi = get_epsilon(e)
     if e < EPSILON:
         action = env.action_space.sample()
     else:
@@ -81,27 +122,14 @@ def select_action(state,q):
     return action
 
 
-def state_to_bucket(state):
-    bucket_indice = []
-    for i in range(len(state)):
-        if state[i] <= STATE_BOUNDS[i][0]:
-            bucket_index = 0
-        elif state[i] >= STATE_BOUNDS[i][1]:
-            bucket_index = NUM_BUCKETS[i] - 1
-        else:
-            # Mapping the state bounds to the bucket array
-            bound_width = STATE_BOUNDS[i][1] - STATE_BOUNDS[i][0]
-            offset = (NUM_BUCKETS[i]-1)*STATE_BOUNDS[i][0]/bound_width
-            scaling = (NUM_BUCKETS[i]-1)/bound_width
-            bucket_index = int(round(scaling*state[i] - offset))
-        bucket_indice.append(bucket_index)
-    return tuple(bucket_indice)
+
+##################### BOLTZMANN NOISY RATIONAL #################################
 
 def boltz_rational_noisy(env,q_table,beta):
     # Tau : temperature coefficient
     # n : number of demonstrations generated from the same start
 
-    dic_action = ['N','E','S','W']
+    dic_action = ['N','S','E','W']
     obv = env.reset()
     state = state_to_bucket(obv)
     a=[]
@@ -114,28 +142,73 @@ def boltz_rational_noisy(env,q_table,beta):
 
         actions = q_table[state]
         boltz_distribution = np.exp(actions/beta)/np.sum(np.exp(actions/beta))
+        if np.isnan(boltz_distribution).any():
+            noisy_behaviour = np.random.choice(dic_action)
         noisy_behaviour = np.random.choice(dic_action,p=boltz_distribution)
-        #noisy_behaviour = dic_action[noisy_behaviour]
-
-        print(actions,boltz_distribution)
-        print(dic_action[select_action(state,q_table)],noisy_behaviour)
+        #noisy_behaviour = dic_action[np.argmax(boltz_distribution)]
+        #print(actions,boltz_distribution)
+        #print(dic_action[select_action(state,q_table,0)],noisy_behaviour)
 
         new_state,reward,done,_ = env.step(noisy_behaviour)
 
         state=state_to_bucket(new_state)
         a.append(noisy_behaviour)
-        env.render()
-        time.sleep(0.2)
 
-    a = np.array(a)
+        if RENDER:
+            env.render()
+            time.sleep(0.1)
+
+    return a
+
+
+"""
+
+    IRRATIONAL BIASES
+
+"""
+
+#########################  BOLTZMANN RATIONAL ##################################
+
+def boltz_rational(env,beta):
+
+    v_vector = np.random.rand(env.size[1]*env.size[0])
+    #v_vector = np.zeros((env.size[1]*env.size[0]))
+
+    theta=1
+    err=2
+
+    while err>theta:
+
+        err=0
+
+        for s in range(env.size[0]*env.size[1]):
+            if s == ind2sub(env.size[1],env.end):
+                pass
+            env.reset(sub2ind(env.size[1],s))
+            v_temp = np.copy(v_vector)
+            v = v_vector[s]
+            x = []
+            for a in range(4):
+                [new_s,reward,done] = env.step(a)
+                if new_s!=env.state:
+                    x.append(reward + env.discount*v_temp[ind2sub(env.size[1],new_s)])
+                else:
+                    x.append(0)
+            x = np.array(x)
+            v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
+            err = max(err,abs(v_vector[s]-v))
+
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+    return v_vector
 
 
 
 
+###################### MAIN ####################################################
 
 if __name__ == "__main__":
 
-    env = MazeEnvSample3x3()
+    env = MazeEnvSample10x10()
     #env = gym.make("maze-random-10x10-plus-v0")
 
     MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
@@ -145,18 +218,37 @@ if __name__ == "__main__":
 
 
     LR = 0.1
-    EPSILON = 0.3
-    MAX_EPISODE = 40000
-    MAX_STEP = 50
-    DISCOUNT = 0.99
-    MIN_STREAK = 500
-    RENDER = False
+    EPSILON = 0.02
+    MAX_EPISODE = 50000
+    MAX_STEP = 100
+    DISCOUNT = 1 #0.99
+    MIN_STREAK = MAX_EPISODE
+    RENDER = True
+    SIMULATE = False
 
-    q_table = simulate()
+    if SIMULATE:
+        q_table = simulate()
+        path = "qtable1_10x10"
+        np.save(path,q_table)
+    else:
+        path = "qtable1_10x10.npy"
+        q_table = np.load(open(path,'rb'))
+
     print(q_table)
+    traj = []
+    for k in range(1):
+        demo = boltz_rational_noisy(env,q_table,1.2e-3)
+        traj.append(demo)
 
-    boltz_rational_noisy(env,q_table,0.1)
+    #print("Trajectory length",[len(t) for t in traj])
+    len_traj = [len(t) for t in traj]
 
+    plt.hist(len_traj,density=True)
+    plt.show()
+    print("Min trajectory length",np.min([len(t) for t in traj]))
+    print("Max trajectory length",np.max([len(t) for t in traj]))
+    print("Mean",np.mean([len(t) for t in traj]))
+    print("Standard deviation",np.std([len(t) for t in traj]))
 
     state = state_to_bucket(env.reset())
     EPSILON = 0
@@ -164,14 +256,16 @@ if __name__ == "__main__":
     env.render()
 
     for k in range(MAX_STEP):
-        action = select_action(state,q_table)
+        action = select_action(state,q_table,0)
         a.append(action)
         new_s, reward, done, _ = env.step(action)
         new_s = state_to_bucket(new_s)
         state = new_s
-        env.render()
-        time.sleep(1)
+
+        if RENDER:
+            env.render()
+            time.sleep(0.5)
         if done :
             break
 
-    print(len(a),"itérations -> ",irrationality.Grid.action2str(a))
+    print(len(a),"itérations -> ",action2str(a))
