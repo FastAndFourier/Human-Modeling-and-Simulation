@@ -143,8 +143,9 @@ def boltz_rational_noisy(env,q_table,beta):
         actions = q_table[state]
         boltz_distribution = np.exp(actions/beta)/np.sum(np.exp(actions/beta))
         if np.isnan(boltz_distribution).any():
-            noisy_behaviour = np.random.choice(dic_action)
-        noisy_behaviour = np.random.choice(dic_action,p=boltz_distribution)
+            noisy_behaviour = dic_action[np.argmax(boltz_distribution)]
+        else:
+            noisy_behaviour = np.random.choice(dic_action,p=boltz_distribution)
         #noisy_behaviour = dic_action[np.argmax(boltz_distribution)]
         #print(actions,boltz_distribution)
         #print(dic_action[select_action(state,q_table,0)],noisy_behaviour)
@@ -171,44 +172,77 @@ def boltz_rational_noisy(env,q_table,beta):
 
 def boltz_rational(env,beta):
 
-    v_vector = np.random.rand(env.size[1]*env.size[0])
+    v_vector = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))#np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])
     #v_vector = np.zeros((env.size[1]*env.size[0]))
 
-    theta=1
+    theta=0.02
     err=2
 
-    while err>theta:
 
+    #while err>theta:
+    for k in range(2):
         err=0
 
-        for s in range(env.size[0]*env.size[1]):
-            if s == ind2sub(env.size[1],env.end):
-                pass
-            env.reset(sub2ind(env.size[1],s))
-            v_temp = np.copy(v_vector)
-            v = v_vector[s]
-            x = []
-            for a in range(4):
-                [new_s,reward,done] = env.step(a)
-                if new_s!=env.state:
-                    x.append(reward + env.discount*v_temp[ind2sub(env.size[1],new_s)])
-                else:
-                    x.append(0)
-            x = np.array(x)
-            v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
-            err = max(err,abs(v_vector[s]-v))
+        for i in range(NUM_BUCKETS[0]):
+            for j in range(NUM_BUCKETS[1]):
 
-    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+                s = [i,j]
+                env.state = s
+
+                if (s == env.observation_space.high).all():
+                    pass
+
+                v_temp = np.copy(v_vector)
+                v = v_vector[s[0],s[1]]
+                x = []
+                for a in ['N','S','E','W']:
+                    env.state = [i,j]
+                    new_s,reward,done,_ = env.step(a)
+                    new_s = state_to_bucket(new_s)
+
+                    #if state_to_bucket(new_s)!=s:
+                    x.append(reward + DISCOUNT*v_temp[new_s[0],new_s[1]])
+
+                    #print(x)
+                    #else:
+                        #x.append(0)
+                x = np.array(x)
+                print(x)
+                v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
+                err = max(err,abs(v_vector[s[0],s[1]]-v))
+
+    end = env.observation_space.high
+    v_vector[end[0],end[1]] = 1
+
     return v_vector
 
+def generate_traj_v(env,v):
 
+    done=False
+    obv = env.reset()
+    s = state_to_bucket(obv)
+    it=0
+    action_ = []
+
+    while not(done) and it<100:
+        v_choice = []
+        for a in ['N','S','E','W']:
+            ns,r,done,_ = env.step(a)
+            v_choice.append(r + DISCOUNT*v[ns])
+
+        action = np.argmax(v_choice)
+        new_s,reward,done,_ = env.step(action)
+        env.state = new_s
+        it+=1
+        action_.append(action)
+    print("Start ",env.start,"->",it,"iterations",action2str(action_))
 
 
 ###################### MAIN ####################################################
 
 if __name__ == "__main__":
 
-    env = MazeEnvSample10x10()
+    env = MazeEnvSample5x5()
     #env = gym.make("maze-random-10x10-plus-v0")
 
     MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
@@ -217,10 +251,10 @@ if __name__ == "__main__":
     STATE_BOUNDS = list(zip(env.observation_space.low, env.observation_space.high))
 
 
-    LR = 0.1
+    LR = 0.05
     EPSILON = 0.02
     MAX_EPISODE = 50000
-    MAX_STEP = 100
+    MAX_STEP = 200
     DISCOUNT = 1 #0.99
     MIN_STREAK = MAX_EPISODE
     RENDER = True
@@ -231,13 +265,24 @@ if __name__ == "__main__":
         path = "qtable1_10x10"
         np.save(path,q_table)
     else:
-        path = "qtable1_10x10.npy"
+        path = "qtable2_5x5.npy"
         q_table = np.load(open(path,'rb'))
 
+    print(env.observation_space.high)
     print(q_table)
+    v_vector = boltz_rational(env,10)
+    print(v_vector)
+    v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    for i in range(NUM_BUCKETS[0]):
+        for j in range(NUM_BUCKETS[1]):
+            state = state_to_bucket([i,j])
+            v_from_q[i,j] = np.max(q_table[state])
+
+    print(v_from_q)
+    """
     traj = []
     for k in range(1):
-        demo = boltz_rational_noisy(env,q_table,1.2e-3)
+        demo = boltz_rational_noisy(env,q_table,1e-3)
         traj.append(demo)
 
     #print("Trajectory length",[len(t) for t in traj])
@@ -269,3 +314,4 @@ if __name__ == "__main__":
             break
 
     print(len(a),"itérations -> ",action2str(a))
+    """
