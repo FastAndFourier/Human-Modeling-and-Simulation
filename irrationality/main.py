@@ -17,19 +17,21 @@ oox.add_danger([4,1])
 
 oox.print_env()
 
-step_, err_ = oox.q_learning(50,50001)
+step_, err_ = oox.q_learning(50,50000)
 
 vi = value_iterate(oox)
+print(vi)
 
 print("Trajectoires Boltzmann VI :")
-beta = [0,0.1,1,10]
+beta = [0,0.5,1,10]
 for b in beta:
     vB = boltz_rational(oox,b)
+    print(vB)
     print("Beta = ",b," :",end=" ")
     generate_traj_v(oox,vB,[3,3])
 
 print("\nTrajectoires Boltzmann noisy-rational :")
-beta = [1000,10,1,0.1]
+beta = [10000,2,0.1,0.02]
 for b in beta:
     print("Beta = ",1/b," :",end=" ")
     demo, start_ = boltz_rational_noisy(oox,b,1,[3,3])
@@ -48,20 +50,31 @@ print("\n\nCréation de l'environment 2 ...\n")
 grid1 = grid([5,5])
 grid1.add_end([0,4])
 
-for i in range(2):
-    for j in range(1,3):
-        grid1.add_danger([i,j])
+# for i in range(2):
+#     for j in range(1,3):
+#         grid1.add_danger([i,j])
+#
+# for i in range(1,2):
+#     for j in range(2,4):
+#         grid1.add_danger([i,j])
 
-for i in range(1,2):
-    for j in range(2,4):
-        grid1.add_danger([i,j])
+grid1.add_danger([0,1])
+grid1.add_danger([0,2])
+grid1.add_danger([1,1])
+grid1.add_danger([1,2])
+grid1.add_danger([2,2])
+grid1.add_danger([3,2])
+grid1.add_danger([3,3])
+
 grid1.print_env()
 
-step_, err_ = grid1.q_learning(50,20001)
+step_, err_ = grid1.q_learning(50,50000)
 
 print("Prospect bias :")
 vP = prospect_bias(grid1,4)
 vP1 = prospect_bias(grid1,5)
+print(vP)
+print(vP1)
 print("\n")
 generate_traj_v(grid1,vP,[0,0])
 generate_traj_v(grid1,vP1,[0,0])
@@ -78,13 +91,15 @@ grid2.add_danger([3,1])
 grid2.add_danger([4,3])
 grid2.print_env()
 
-step_, err_ = grid2.q_learning(200,50001)
+step_, err_ = grid2.q_learning(200,50000)
 
 
 
 print("\nExtremal :")
 vE = extremal(grid2,0)
-vE1 = extremal(grid2,0.25)
+vE1 = extremal(grid2,1)
+print(vE.reshape(grid2.size))
+print(vE1.reshape(grid2.size))
 print("\n")
 generate_traj_v(grid2,vE,[0,0])
 generate_traj_v(grid2,vE1,[0,0])

@@ -3,9 +3,9 @@ import gym_maze
 from gym_maze.envs import MazeEnvSample3x3, MazeEnvSample5x5, MazeEnvSample10x10, MazeEnvSample100x100
 import sys
 sys.path.append("..")
-import irrationality.Grid
-import irrationality.boltzman_rational
-import irrationality.irrational_behavior
+#import irrationality.Grid
+#import irrationality.boltzman_rational
+#import irrationality.irrational_behavior
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -172,7 +172,7 @@ def boltz_rational_noisy(env,q_table,beta):
 
 def boltz_rational(env,beta):
 
-    v_vector = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))#np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])
+    v_vector = np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])#np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
     #v_vector = np.zeros((env.size[1]*env.size[0]))
 
     theta=0.02
@@ -187,7 +187,6 @@ def boltz_rational(env,beta):
             for j in range(NUM_BUCKETS[1]):
 
                 s = [i,j]
-                env.state = s
 
                 if (s == env.observation_space.high).all():
                     pass
@@ -196,7 +195,6 @@ def boltz_rational(env,beta):
                 v = v_vector[s[0],s[1]]
                 x = []
                 for a in ['N','S','E','W']:
-                    env.state = [i,j]
                     new_s,reward,done,_ = env.step(a)
                     new_s = state_to_bucket(new_s)
 
@@ -207,7 +205,7 @@ def boltz_rational(env,beta):
                     #else:
                         #x.append(0)
                 x = np.array(x)
-                print(x)
+                #print(x)
                 v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
                 err = max(err,abs(v_vector[s[0],s[1]]-v))
 
@@ -270,37 +268,42 @@ if __name__ == "__main__":
 
     print(env.observation_space.high)
     print(q_table)
-    v_vector = boltz_rational(env,10)
-    print(v_vector)
+    v_vector = boltz_rational(env,1e-3)
+    print("Boltzmann value function :\n",v_vector)
     v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
     for i in range(NUM_BUCKETS[0]):
         for j in range(NUM_BUCKETS[1]):
             state = state_to_bucket([i,j])
             v_from_q[i,j] = np.max(q_table[state])
 
-    print(v_from_q)
+    print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
+
+    while True:
+        env.render()
+
     """
     traj = []
-    for k in range(1):
-        demo = boltz_rational_noisy(env,q_table,1e-3)
+    beta = [10,1e-1,1e-3]
+    for b in beta:
+        demo = boltz_rational_noisy(env,q_table,b)
         traj.append(demo)
 
     #print("Trajectory length",[len(t) for t in traj])
-    len_traj = [len(t) for t in traj]
-
-    plt.hist(len_traj,density=True)
-    plt.show()
-    print("Min trajectory length",np.min([len(t) for t in traj]))
-    print("Max trajectory length",np.max([len(t) for t in traj]))
-    print("Mean",np.mean([len(t) for t in traj]))
-    print("Standard deviation",np.std([len(t) for t in traj]))
+    # len_traj = [len(t) for t in traj]
+    #
+    # plt.hist(len_traj,density=True)
+    # plt.show()
+    # print("Min trajectory length",np.min([len(t) for t in traj]))
+    # print("Max trajectory length",np.max([len(t) for t in traj]))
+    # print("Mean",np.mean([len(t) for t in traj]))
+    # print("Standard deviation",np.std([len(t) for t in traj]))
 
     state = state_to_bucket(env.reset())
     EPSILON = 0
     a = []
     env.render()
 
-    for k in range(MAX_STEP):
+    for k in range(MAX_STEP):[0, 2]
         action = select_action(state,q_table,0)
         a.append(action)
         new_s, reward, done, _ = env.step(action)

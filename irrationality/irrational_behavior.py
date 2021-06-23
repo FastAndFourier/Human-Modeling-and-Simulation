@@ -1,3 +1,4 @@
+#from Grid import *
 import irrationality.Grid
 import numpy as np
 
@@ -5,7 +6,7 @@ import numpy as np
 def value_iterate(env):
     v_vector = np.zeros((env.size[1]*env.size[0]))
 
-    theta=1
+    theta=0.5
     err=2
 
     #for k in range(2):
@@ -34,7 +35,7 @@ def boltz_rational(env,beta):
     v_vector = np.random.rand(env.size[1]*env.size[0])
     #v_vector = np.zeros((env.size[1]*env.size[0]))
 
-    theta=1
+    theta=0.5
     err=2
 
     while err>theta:
@@ -49,7 +50,7 @@ def boltz_rational(env,beta):
             v = v_vector[s]
             x = []
             for a in range(4):
-                [new_s,reward,done] = env.step(a)
+                [new_s,reward,done] =.reshape(grid2.shape) env.step(a)
                 if new_s!=env.state:
                     x.append(reward + env.discount*v_temp[ind2sub(env.size[1],new_s)])
                 else:
@@ -66,7 +67,7 @@ def prospect_bias(env,c):
     v_vector = np.random.rand(env.size[1]*env.size[0])
     #np.zeros((env.size[1]*env.size[0]))
 
-    theta=1
+    theta=0.5
     err=2
 
     while err>theta:
@@ -103,8 +104,8 @@ def prospect_bias(env,c):
 def extremal(env,alpha):
 
     v_vector = np.random.rand(env.size[0]*env.size[1])
-
-    theta=1
+    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+    theta=0.5
     err=2
 
     while err>theta:
@@ -129,7 +130,7 @@ def extremal(env,alpha):
 
                 err = max(err,abs(v_vector[s]-v))
 
-    v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
+    #v_vector[ind2sub(env.size[1],env.end)] = env.tab[env.end[0],env.end[1]]
     return v_vector
 
 def generate_traj_v(env,v,start_):
@@ -139,7 +140,7 @@ def generate_traj_v(env,v,start_):
     it=0
     action_ = []
 
-    while not(done) and it<100:
+    while not(done) and it<200:
         if env.start == env.end:
             break
 
@@ -153,4 +154,7 @@ def generate_traj_v(env,v,start_):
         env.state = new_s
         it+=1
         action_.append(action)
-    print("Start ",env.start,"->",it,"iterations",action2str(action_))
+    if len(action_)==200:
+        print("Démonstration trop longue (> 200 actions)")
+    else:
+        print("Start ",env.start,"->",it,"iterations",action2str(action_))
