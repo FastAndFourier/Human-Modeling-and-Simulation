@@ -129,6 +129,7 @@ def boltz_rational_noisy(env,q_table,beta):
     # Tau : temperature coefficient
     # n : number of demonstrations generated from the same start
 
+    print(beta)
     dic_action = ['N','S','E','W']
     obv = env.reset()
     state = state_to_bucket(obv)
@@ -141,16 +142,16 @@ def boltz_rational_noisy(env,q_table,beta):
     while not(done):
 
         actions = q_table[state]
-        boltz_distribution = np.exp(actions/beta)/np.sum(np.exp(actions/beta))
-        if np.isnan(boltz_distribution).any():
-            noisy_behaviour = dic_action[np.argmax(boltz_distribution)]
-        else:
-            noisy_behaviour = np.random.choice(dic_action,p=boltz_distribution)
-        #noisy_behaviour = dic_action[np.argmax(boltz_distribution)]
-        #print(actions,boltz_distribution)
-        #print(dic_action[select_action(state,q_table,0)],noisy_behaviour)
+        b = max(actions)
+        boltz_distribution = np.exp((actions-b)/beta)/np.sum(np.exp((actions-b)/beta))
+
+        noisy_behaviour = np.random.choice(dic_action,p=boltz_distribution)
+
 
         new_state,reward,done,_ = env.step(noisy_behaviour)
+        # if done:
+        #     print("new_state",new_state)
+        #     break
 
         state=state_to_bucket(new_state)
         a.append(noisy_behaviour)
@@ -172,45 +173,46 @@ def boltz_rational_noisy(env,q_table,beta):
 
 def boltz_rational(env,beta):
 
-    v_vector = np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])#np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    #v_vector = np.zeros((env.size[1]*env.size[0]))
+    #v_vector = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    v_vector = np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])
 
-    theta=0.02
+    end = env.observation_space.high
+    v_vector[state_to_bucket(end)] = 1
+
+
+    _=env.reset()
+    env.render()
+    theta=0.2
     err=2
 
+    while err>theta:
 
-    #while err>theta:
-    for k in range(2):
+        v_temp = np.copy(v_vector)
         err=0
 
         for i in range(NUM_BUCKETS[0]):
             for j in range(NUM_BUCKETS[1]):
 
-                s = [i,j]#env.reset([i,j])
+                obv = np.array([i,j],dtype=int)
+                s = state_to_bucket(obv)
 
-                if (s == env.observation_space.high).all():
-                    pass
-
-                v_temp = np.copy(v_vector)
-                v = v_vector[s[0],s[1]]
+                v = v_vector[s]
                 x = []
                 for a in ['N','S','E','W']:
-                    new_s,reward,done,_ = env.step(a)
-                    new_s = state_to_bucket(new_s)
+                    env.env.reset(s)
+                    new_s,reward,_,_ = env.step(a)
+                    #print(s,a,state_to_bucket(new_s))
+                    x.append(reward + DISCOUNT*v_temp[state_to_bucket(new_s)])
 
-                    #if state_to_bucket(new_s)!=s:
-                    x.append(reward + DISCOUNT*v_temp[new_s[0],new_s[1]])
-
-                    #print(x)
-                    #else:
-                        #x.append(0)
-                x = np.array(x)
                 #print(x)
-                v_vector[s] = np.sum(x*np.exp(x*beta))/np.sum(np.exp(x*beta))
-                err = max(err,abs(v_vector[s[0],s[1]]-v))
+                x = np.array(x)
+                b = np.max(x)
+                v_vector[s] = np.sum(x*np.exp((x-b)*beta))/np.sum(np.exp((x-b)*beta))
+                err = max(err,abs(v_vector[s]-v))
 
-    end = env.observation_space.high
-    v_vector[end[0],end[1]] = 1
+
+        print(err)
+    print("VI Boltz done")
 
     return v_vector
 
@@ -222,26 +224,51 @@ def generate_traj_v(env,v):
     it=0
     action_ = []
 
-    while not(done) and it<100:
-        v_choice = []
-        for a in ['N','S','E','W']:
-            ns,r,done,_ = env.step(a)
-            v_choice.append(r + DISCOUNT*v[ns])
+    env.render()
 
-        action = np.argmax(v_choice)
-        new_s,reward,done,_ = env.step(action)
-        env.state = new_s
+
+    dic_action = ['N','S','E','W']
+    while not(done) and it<1000:
+        print("Current state",env.state)
+        v_choice = []
+        for a in dic_action:
+            env.env.reset(s)
+            new_s,r,_,_ = env.step(a)
+
+            #print(r,v[state_to_bucket(new_s)])
+            v_choice.append(r + DISCOUNT*v[state_to_bucket(new_s)])
+
+
+        if not(OP_VI):
+            action = np.argmax(v_choice)
+        else:
+            v_choice = np.array(v_choice)
+            b = max(v_choice)
+            distrib = np.exp((v_choice-b)/1e-1)/np.sum(np.exp((v_choice-b)/1e-1))
+            action = np.random.choice([0,1,2,3],p=distrib)
+
+        env.env.reset(s)
+        new_s,reward,done,_ = env.step(dic_action[action])
         it+=1
         action_.append(action)
-    print("Start ",env.start,"->",it,"iterations",action2str(action_))
+        obv = new_s
+        s = state_to_bucket(obv)
+
+
+        if RENDER:
+            env.render()
+            time.sleep(0.1)
+    print("Start ",env.reset(),"->",it,"iterations",action2str(action_))
 
 
 ###################### MAIN ####################################################
 
 if __name__ == "__main__":
 
-    env = MazeEnvSample10x10()
-    #env = gym.make("maze-random-10x10-plus-v0")
+    #env = MazeEnvSample10x10()
+    env = gym.make("maze-sample-10x10-v0")
+    #env1 = gym.make("maze-random-10x10-plus-v0")
+    #env = gym.make("maze2d_10x10")
 
     MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
     NUM_BUCKETS = MAX_SIZE
@@ -258,38 +285,51 @@ if __name__ == "__main__":
     RENDER = True
     SIMULATE = False
 
+    OP_VI = 1 # 0 = Argmax, 1 = Softmax
+
     if SIMULATE:
         q_table = simulate()
-        path = "qtable1_10x10"
+        path = "qtable2_10x10"
         np.save(path,q_table)
     else:
         path = "qtable1_10x10.npy"
         q_table = np.load(open(path,'rb'))
 
-    # print(env.observation_space.high)
-    # print(q_table)
-    # v_vector = boltz_rational(env,1e-3)
-    # print("Boltzmann value function :\n",v_vector)
-    # v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    # for i in range(NUM_BUCKETS[0]):
-    #     for j in range(NUM_BUCKETS[1]):
-    #         state = state_to_bucket([i,j])
-    #         v_from_q[i,j] = np.max(q_table[state])
+
+    v_vector = boltz_rational(env,1)
+    print("Boltzmann value function :\n",v_vector)
+
+    v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    for i in range(NUM_BUCKETS[0]):
+        for j in range(NUM_BUCKETS[1]):
+            state = state_to_bucket([i,j])
+            v_from_q[i,j] = np.max(q_table[state])
+
+    print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
+
+    generate_traj_v(env,v_vector)
+    generate_traj_v(env,v_from_q)
+
+
+    # traj = []
+    # beta = [1e-1,1e-3]
+    # beta = [1e-4,1e-5]
+    # for b in beta:
+    #     print(b)
+    # demo = boltz_rational_noisy(env,q_table,1e-4)
+    # print(env.state)
+    # s=env.env.reset()
+    # print(s)
+    # demo = boltz_rational_noisy(env,q_table,1e-5)
+
+    #while True:
+
+    # _=env.reset()
+    # env.env.reset(np.array([0,0]))
+    # demo = boltz_rational_noisy(env,q_table,1e-4)
+    # traj.append(demo)
     #
-    # print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
-    #
-    # while True:
-    #     env.render()
-
-
-    traj = []
-    #beta = [1e-1,1e-3]
-    beta = [1e-3]
-    for b in beta:
-        demo = boltz_rational_noisy(env,q_table,b)
-        traj.append(demo)
-
-    #print("Trajectory length",[len(t) for t in traj])
+    # print("Trajectory length",[len(t) for t in traj])
     # len_traj = [len(t) for t in traj]
     #
     # plt.hist(len_traj,density=True)
@@ -299,22 +339,23 @@ if __name__ == "__main__":
     # print("Mean",np.mean([len(t) for t in traj]))
     # print("Standard deviation",np.std([len(t) for t in traj]))
 
-    state = state_to_bucket(env.reset())
-    EPSILON = 0
-    a = []
-    env.render()
-
-    for k in range(MAX_STEP):
-        action = select_action(state,q_table,0)
-        a.append(action)
-        new_s, reward, done, _ = env.step(action)
-        new_s = state_to_bucket(new_s)
-        state = new_s
-
-        if RENDER:
-            env.render()
-            time.sleep(0.1)
-        if done :
-            break
-
-    print(len(a),"itérations -> ",action2str(a))
+    # print("IN")
+    # state = state_to_bucket(env.reset())
+    # EPSILON = 0
+    # a = []
+    # env.render()
+    #
+    # for k in range(MAX_STEP):
+    #     action = select_action(state,q_table,0)
+    #     a.append(action)
+    #     new_s, reward, done, _ = env.step(action)
+    #     new_s = state_to_bucket(new_s)
+    #     state = new_s
+    #
+    #     if RENDER:
+    #         env.render()
+    #         time.sleep(0.1)
+    #     if done :
+    #         break
+    #
+    # print(len(a),"itérations -> ",action2str(a))
