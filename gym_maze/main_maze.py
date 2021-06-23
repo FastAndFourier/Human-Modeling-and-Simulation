@@ -157,7 +157,7 @@ def boltz_rational_noisy(env,q_table,beta):
 
         if RENDER:
             env.render()
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     return a
 
@@ -186,7 +186,7 @@ def boltz_rational(env,beta):
         for i in range(NUM_BUCKETS[0]):
             for j in range(NUM_BUCKETS[1]):
 
-                s = [i,j]
+                s = [i,j]#env.reset([i,j])
 
                 if (s == env.observation_space.high).all():
                     pass
@@ -240,7 +240,7 @@ def generate_traj_v(env,v):
 
 if __name__ == "__main__":
 
-    env = MazeEnvSample5x5()
+    env = MazeEnvSample10x10()
     #env = gym.make("maze-random-10x10-plus-v0")
 
     MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
@@ -263,27 +263,28 @@ if __name__ == "__main__":
         path = "qtable1_10x10"
         np.save(path,q_table)
     else:
-        path = "qtable2_5x5.npy"
+        path = "qtable1_10x10.npy"
         q_table = np.load(open(path,'rb'))
 
-    print(env.observation_space.high)
-    print(q_table)
-    v_vector = boltz_rational(env,1e-3)
-    print("Boltzmann value function :\n",v_vector)
-    v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    for i in range(NUM_BUCKETS[0]):
-        for j in range(NUM_BUCKETS[1]):
-            state = state_to_bucket([i,j])
-            v_from_q[i,j] = np.max(q_table[state])
+    # print(env.observation_space.high)
+    # print(q_table)
+    # v_vector = boltz_rational(env,1e-3)
+    # print("Boltzmann value function :\n",v_vector)
+    # v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    # for i in range(NUM_BUCKETS[0]):
+    #     for j in range(NUM_BUCKETS[1]):
+    #         state = state_to_bucket([i,j])
+    #         v_from_q[i,j] = np.max(q_table[state])
+    #
+    # print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
+    #
+    # while True:
+    #     env.render()
 
-    print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
 
-    while True:
-        env.render()
-
-    """
     traj = []
-    beta = [10,1e-1,1e-3]
+    #beta = [1e-1,1e-3]
+    beta = [1e-3]
     for b in beta:
         demo = boltz_rational_noisy(env,q_table,b)
         traj.append(demo)
@@ -303,7 +304,7 @@ if __name__ == "__main__":
     a = []
     env.render()
 
-    for k in range(MAX_STEP):[0, 2]
+    for k in range(MAX_STEP):
         action = select_action(state,q_table,0)
         a.append(action)
         new_s, reward, done, _ = env.step(action)
@@ -312,9 +313,8 @@ if __name__ == "__main__":
 
         if RENDER:
             env.render()
-            time.sleep(0.5)
+            time.sleep(0.1)
         if done :
             break
 
     print(len(a),"itérations -> ",action2str(a))
-    """
