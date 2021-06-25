@@ -22,12 +22,14 @@ STATE_BOUNDS = list(zip(env.observation_space.low, env.observation_space.high))
 
 LR = 0.05
 EPSILON = 0.02
-MAX_EPISODE = 50000
+MAX_EPISODE = 10000
 MAX_STEP = 200
-DISCOUNT = 1 #0.99
+DISCOUNT = 1
 MIN_STREAK = MAX_EPISODE
 RENDER = True
 SIMULATE = False
+
+OP_VI = 0
 
 ################# HELPER FUNCTIONS #############################################
 
@@ -91,35 +93,78 @@ def get_reward(env):
 
 def select_action_from_v(env,state,v):
 
-    reward_table = get_reward(env,state)
-    for a in range(4):
-        r = reward_table[tuple(state)+a]
-        new_s,r,_,_ = env.step(a)
+    reward_table = get_reward(env)
+    maze = env.env.maze_view.maze
+    v_choice = []
+    dict_action = ['N','E','S','W']
+    env.env.reset(state)
 
-        #print(r,v[state_to_bucket(new_s)])
-        v_choice.append(r + DISCOUNT*v[state_to_bucket(new_s)])
+    maze_cell =  maze.get_walls_status(maze.maze_cells[state[1],state[0]])
 
+    if maze_cell['N']==1:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0],state[1]-1])])
+    else:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
 
-    if not(OP_VI):
-        action = np.argmax(v_choice)
+    if maze_cell['S']==1:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0],state[1]+1])])
+    else:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
 
+    if maze_cell['E']==1:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0]+1,state[1]])])
+    else:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
+
+    if maze_cell['W']==1:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0]-1,state[1]])])
+    else:
+        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
+
+    # for i,a in enumerate(dict_action):
+    #     r = reward_table[tuple(state)+(i,)]
+    #
+    #
+    #     if maze_cell[a]==1:
+    #         if a=='N':
+    #             new_s = [state[0],state[1]-1]
+    #         elif a=='E':
+    #             new_s = [state[0]+1,state[1]]
+    #         elif a=='S':
+    #             new_s = [state[0],state[1]+1]
+    #         else:
+    #             new_s = [state[0]-1,state[1]]
+    #     else:
+    #         new_s = state
+    #
+    #
+    #     #print("new state",tuple(new_s))
+    #     v_choice.append(r + DISCOUNT*v[tuple(new_s)])
+    #
+    # v_choice = [v_choice[0],v_choice[2],v_choice[1],v_choice[3]]
+    action = np.argmax(v_choice)#dict_action[np.argmax(v_choice)]
+    print("Choosen action",action)
+    #print("in-function state",env.state)
+    return action
 
 ############################ Q-LEARNING ########################################
 
 def simulate():
 
-    env.render()
+    #env.render()
     q_table = np.zeros(NUM_BUCKETS + (NUM_ACTIONS,), dtype=float)
     streak = 0
     reach = 0
 
     for e in tqdm(range(MAX_EPISODE)):
 
-        obv = env.reset()
+        obv = env.env.reset(np.array([0,0]))
+        env._elapsed_steps = 0
+
         state = state_to_bucket(obv)
 
         if e%1000==0:
-            print(get_epsilon(e))
+            #print(get_epsilon(e))
             print("Episode #",e,"(",reach,")")
 
         for k in range(MAX_STEP):
@@ -132,7 +177,6 @@ def simulate():
             state = new_s
 
             if done :
-                #print("Succeed without reaching max step")
                 break
 
             if RENDER:
@@ -147,6 +191,8 @@ def simulate():
         if streak > MIN_STREAK:
             print(MIN_STREAK,"episode under",MAX_STEP,"!!")
             break
+
+        #time.sleep(0.1)
 
     return  q_table
 
@@ -285,25 +331,30 @@ def generate_traj_v(env,v):
     dic_action = ['N','S','E','W']
     while not(done) and it<1000:
         print("Current state",env.state)
-        v_choice = []
-        for a in dic_action:
-            env.env.reset(s)
-            new_s,r,_,_ = env.step(a)
-
-            #print(r,v[state_to_bucket(new_s)])
-            v_choice.append(r + DISCOUNT*v[state_to_bucket(new_s)])
-
-
-        if not(OP_VI):
-            action = np.argmax(v_choice)
-        else:
-            v_choice = np.array(v_choice)
-            b = max(v_choice)
-            distrib = np.exp((v_choice-b)/1e-1)/np.sum(np.exp((v_choice-b)/1e-1))
-            action = np.random.choice([0,1,2,3],p=distrib)
-
-        env.env.reset(s)
-        new_s,reward,done,_ = env.step(dic_action[action])
+        action = select_action_from_v(env,s,v)
+        # print(env.state)
+        # v_choice = []
+        # for a in dic_action:
+        #     env.env.reset(s)
+        #     new_s,r,_,_ = env.step(a)
+        #
+        #     #print(r,v[state_to_bucket(new_s)])
+        #     v_choice.append(r + DISCOUNT*v[state_to_bucket(new_s)])
+        #
+        #
+        # if not(OP_VI):
+        #     action = np.argmax(v_choice)
+        # else:
+        #     v_choice = np.array(v_choice)
+        #     b = max(v_choice)
+        #     distrib = np.exp((v_choice-b)/1e-1)/np.sum(np.exp((v_choice-b)/1e-1))
+        #     action = np.random.choice([0,1,2,3],p=distrib)
+        #
+        # print(action)
+        #env.env.reset(s)
+        #print(action)
+        new_s,reward,done,_ = env.step(int(action))
+        #print(new_s)
         it+=1
         action_.append(action)
         obv = new_s
@@ -312,7 +363,7 @@ def generate_traj_v(env,v):
 
         if RENDER:
             env.render()
-            time.sleep(0.1)
+            time.sleep(2)
     print("Start ",env.reset(),"->",it,"iterations",action2str(action_))
 
 
