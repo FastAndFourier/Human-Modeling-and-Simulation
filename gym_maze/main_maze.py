@@ -2,10 +2,6 @@ import gym
 import gym_maze
 from gym_maze.envs import MazeEnvSample3x3, MazeEnvSample5x5, MazeEnvSample10x10, MazeEnvSample100x100
 import sys
-sys.path.append("..")
-#import irrationality.Grid
-#import irrationality.boltzman_rational
-#import irrationality.irrational_behavior
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
@@ -63,6 +59,7 @@ if __name__ == "__main__":
         q_table = np.load(open(path,'rb'))
 
     v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    v_vector = boltz_rational(env,0.01)
 
     for i in range(NUM_BUCKETS[0]):
         for j in range(NUM_BUCKETS[1]):
@@ -79,25 +76,49 @@ if __name__ == "__main__":
     # print(env.step("E")[0])
     # print(env.step("S")[0])
 
+    boltz_rational_noisy(env,q_table,1e-4)
+    generate_traj_v(env,v_vector)
     generate_traj_v(env,v_from_q)
 
+
     # maze_size = MAX_SIZE[0]
-    #
+    
     # ax_policy.set_xlim(-1.5,maze_size+0.5)
     # ax_policy.set_ylim(maze_size+0.5,-1.5)
     # ax_policy.set_aspect('equal')
-    #
+    
     # ax_V.set_xlim(-1.5,maze_size+0.5)
     # ax_V.set_ylim(maze_size+0.5,-1.5)
     # ax_V.set_aspect('equal')
-    #
+    
     # value_table = v_from_q
-    # print(value_table)
-    #
-    #
-    # #for
-    # ax_policy.quiver(0,0,1,0,color='c')
-    #
+    
+    # position = np.zeros(NUM_BUCKETS,dtype=list)
+    # direction = np.zeros(NUM_BUCKETS,dtype=list)
+    
+    
+    # for i in range(maze_size):
+    #     for j in range(maze_size):
+    #         if ([i,j]==[maze_size-1,maze_size-1]):
+    #             break
+    #         action = select_action_from_v(env,[i,j],v_from_q)
+    #         #print([i,j],action)
+
+    #         if action==0:
+    #             ax_policy.quiver(i,j,0,.75,color='c')
+    #             #arrow.append([0,-1])
+    #         if action==1:
+    #             ax_policy.quiver(i,j,0,-.75,color='c')
+    #             #arrow.append([0,1])
+    #         if action==2:
+    #             ax_policy.quiver(i,j,.75,0,color='c')
+    #             #arrow.append([1,0])
+    #         if action==3:
+    #             ax_policy.quiver(i,j,-.75,0,color='c')
+    #             #arrow.append([-1,0])
+
+   
+    
     # #Draw value table
     # im = ax_V.imshow(np.transpose(value_table.reshape(maze_size,maze_size)))
     # if maze_size<=20:
@@ -105,12 +126,12 @@ if __name__ == "__main__":
     #         i=state//maze_size
     #         j=state%maze_size
     #         text = ax_V.text(i,j, str(value_table[i,j])[0:4],ha="center", va="center", color="w")
-    #
-    #
+    
+    
     # # # draw start and end position
     # plot_start_marker = ax_policy.scatter(0,0, marker="o", s=100,c="b") # s = #size_of_the_marker#
     # plot_end_marker = ax_policy.scatter(maze_size-1,maze_size-1, marker="o", s=100,c="r")
-    #
+    
     # # # draw maze boxes
     # # for i in range(0,maze_size):
     # #     for j in range(0,maze_size):
@@ -120,12 +141,12 @@ if __name__ == "__main__":
     # #         # draw south line
     # #         ax_policy.add_line(mlines.Line2D([i-0.5,i+0.5],[j+0.5,j+0.5],linewidth=0.2,color='gray'))
     # #         ax_V.add_line(mlines.Line2D([i-0.5,i+0.5],[j+0.5,j+0.5],linewidth=0.2,color='gray'))
-    #
+    
     # #draw maze walls
     # for i in walls_list:
     #     ax_policy.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
     #     ax_V.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
-    #
+    
     # # add east and top walls
     # for i in range(0,maze_size):
     #     ax_policy.add_line(mlines.Line2D([-0.5,-0.5],[i-0.5,i+0.5],color='k'))
@@ -136,9 +157,9 @@ if __name__ == "__main__":
     #     ax_V.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
     #     ax_V.add_line(mlines.Line2D([maze_size-0.5,maze_size-0.5],[i-0.5,i+0.5],color='k'))
     #     ax_V.add_line(mlines.Line2D([i-0.5,i+0.5],[maze_size-0.5,maze_size-0.5],color='k'))
-    #
+    
     # #ax_delta.plot([i for i in range(0,delta_list.size)],delta_list)
-    #
+    
     # plt.ioff()
     # plt.show()
 

@@ -84,67 +84,46 @@ def get_reward(env):
 
 
 
-    return np.transpose(reward_tab,axes=[1,0,2])
+    return reward_tab
 
 
-# def get_new_state(s,a):
-#
-#     if a == 'N' and s[0]!=0:
+def get_new_state(env):
+
+    new_state_tab = np.zeros(NUM_BUCKETS + (NUM_ACTIONS,),dtype=tuple)
+
+    state = env.reset()
+    state = state_to_bucket(state)
+
+    for i in range(MAX_SIZE[0]):
+        for j in range(MAX_SIZE[1]):
+
+            state = state_to_bucket([i,j])
+
+            for a in range(4):
+                env.env.reset(state)
+                new_s,r,_,_ = env.step(a)
+                new_state_tab[state+(a,)] = tuple(new_s)
+
+
+
+    return new_state_tab
 
 def select_action_from_v(env,state,v):
 
     reward_table = get_reward(env)
-    maze = env.env.maze_view.maze
+    new_state_table = get_new_state(env)
     v_choice = []
-    dict_action = ['N','E','S','W']
     env.env.reset(state)
 
-    maze_cell =  maze.get_walls_status(maze.maze_cells[state[1],state[0]])
 
-    if maze_cell['N']==1:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0],state[1]-1])])
-    else:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
+    for a in range(4):
 
-    if maze_cell['S']==1:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0],state[1]+1])])
-    else:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
+        new_state = new_state_table[tuple(state) + (a,)]
+        reward = reward_table[tuple(state)+(a,)]
+        v_choice.append(reward + DISCOUNT*v[tuple(new_state)])
 
-    if maze_cell['E']==1:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0]+1,state[1]])])
-    else:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
+    action = np.argmax(v_choice)
 
-    if maze_cell['W']==1:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[0]-1,state[1]])])
-    else:
-        v_choice.append(reward_table[tuple(state)]+DISCOUNT*v[tuple([state[1],state[0]])])
-
-    # for i,a in enumerate(dict_action):
-    #     r = reward_table[tuple(state)+(i,)]
-    #
-    #
-    #     if maze_cell[a]==1:
-    #         if a=='N':
-    #             new_s = [state[0],state[1]-1]
-    #         elif a=='E':
-    #             new_s = [state[0]+1,state[1]]
-    #         elif a=='S':
-    #             new_s = [state[0],state[1]+1]
-    #         else:
-    #             new_s = [state[0]-1,state[1]]
-    #     else:
-    #         new_s = state
-    #
-    #
-    #     #print("new state",tuple(new_s))
-    #     v_choice.append(r + DISCOUNT*v[tuple(new_s)])
-    #
-    # v_choice = [v_choice[0],v_choice[2],v_choice[1],v_choice[3]]
-    action = np.argmax(v_choice)#dict_action[np.argmax(v_choice)]
-    print("Choosen action",action)
-    #print("in-function state",env.state)
     return action
 
 ############################ Q-LEARNING ########################################
@@ -274,16 +253,18 @@ def boltz_rational_noisy(env,q_table,beta):
 
 def boltz_rational(env,beta):
 
-    #v_vector = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    v_vector = np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])
+    v_vector = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
+    #v_vector = np.random.rand(NUM_BUCKETS[0],NUM_BUCKETS[1])
 
     end = env.observation_space.high
-    v_vector[state_to_bucket(end)] = 1
+    v_vector[tuple(end)] = 1
 
+    reward_table = get_reward(env)
+    new_state_table = get_new_state(env)
 
     _=env.reset()
     env.render()
-    theta=0.2
+    theta=0.05
     err=2
 
     while err>theta:
@@ -294,25 +275,25 @@ def boltz_rational(env,beta):
         for i in range(NUM_BUCKETS[0]):
             for j in range(NUM_BUCKETS[1]):
 
-                obv = np.array([i,j],dtype=int)
-                s = state_to_bucket(obv)
+                state = env.env.reset([i,j])
 
-                v = v_vector[s]
+                v = v_vector[tuple(state)]
                 x = []
-                for a in ['N','S','E','W']:
-                    env.env.reset(s)
-                    new_s,reward,_,_ = env.step(a)
-                    #print(s,a,state_to_bucket(new_s))
-                    x.append(reward + DISCOUNT*v_temp[state_to_bucket(new_s)])
+                for a in range(4):
+                    new_state = new_state_table[tuple(state) + (a,)]
+                    reward = reward_table[tuple(state)+(a,)]
+                    x.append(reward + DISCOUNT*v_temp[tuple(new_state)])
 
                 #print(x)
                 x = np.array(x)
-                b = np.max(x)
-                v_vector[s] = np.sum(x*np.exp((x-b)*beta))/np.sum(np.exp((x-b)*beta))
-                err = max(err,abs(v_vector[s]-v))
+                b = 0#np.max(x)
+                v_vector[tuple(state)] = np.sum(x*np.exp((x-b)*beta))/np.sum(np.exp((x-b)*beta))
+                #print(err,abs(v_vector[tuple(state)]-v))
+
+                err = max(err,abs(v_vector[tuple(state)]-v))
 
 
-        print(err)
+        #print(err)
     print("VI Boltz done")
 
     return v_vector
@@ -320,41 +301,18 @@ def boltz_rational(env,beta):
 def generate_traj_v(env,v):
 
     done=False
-    obv = env.reset()
+    obv = env.env.reset([0,0])
     s = state_to_bucket(obv)
     it=0
     action_ = []
 
     env.render()
 
-
-    dic_action = ['N','S','E','W']
     while not(done) and it<1000:
-        print("Current state",env.state)
+
         action = select_action_from_v(env,s,v)
-        # print(env.state)
-        # v_choice = []
-        # for a in dic_action:
-        #     env.env.reset(s)
-        #     new_s,r,_,_ = env.step(a)
-        #
-        #     #print(r,v[state_to_bucket(new_s)])
-        #     v_choice.append(r + DISCOUNT*v[state_to_bucket(new_s)])
-        #
-        #
-        # if not(OP_VI):
-        #     action = np.argmax(v_choice)
-        # else:
-        #     v_choice = np.array(v_choice)
-        #     b = max(v_choice)
-        #     distrib = np.exp((v_choice-b)/1e-1)/np.sum(np.exp((v_choice-b)/1e-1))
-        #     action = np.random.choice([0,1,2,3],p=distrib)
-        #
-        # print(action)
-        #env.env.reset(s)
-        #print(action)
         new_s,reward,done,_ = env.step(int(action))
-        #print(new_s)
+
         it+=1
         action_.append(action)
         obv = new_s
@@ -363,7 +321,7 @@ def generate_traj_v(env,v):
 
         if RENDER:
             env.render()
-            time.sleep(2)
+            time.sleep(0.25)
     print("Start ",env.reset(),"->",it,"iterations",action2str(action_))
 
 
@@ -374,7 +332,8 @@ def edges_and_walls_list_extractor(env):
       walls_list = []
       maze = env.env.maze_view.maze
 
-      maze_size = 10#MAX_SIZE[0]
+      maze_size = MAX_SIZE[0]
+      print(maze_size)
       # top line and left line
       for i in range(0,maze_size):
           walls_list.append([[0,0],[i,i+1]]) # north walls
