@@ -39,8 +39,9 @@ if __name__ == "__main__":
     #print(v_from_q)
     
     #m.generate_traj_v(v_from_q)
-    v_vector = m.boltz_rational(beta=0.05,theta=0.1)
-    #m.generate_traj_v(v_vector)
+    v_vector = m.boltz_rational(1,1e-7)
+    v_vector_prospect = m.prospect_bias(1,0.05)
+    m.generate_traj_v(v_vector)
 
 
     _, walls_list = edges_and_walls_list_extractor(m.env)
@@ -130,134 +131,4 @@ if __name__ == "__main__":
 
     
 
-    # #env = MazeEnvSample10x10()
-    # env = gym.make("maze-sample-10x10-v0")
-
-
-    # env.render()
-    # #env1 = gym.make("maze-random-10x10-plus-v0")
-    # #env = gym.make("maze2d_10x10")
-
-    # MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
-    # NUM_BUCKETS = MAX_SIZE
-    # NUM_ACTIONS = env.action_space.n
-    # STATE_BOUNDS = list(zip(env.observation_space.low, env.observation_space.high))
-
-
-    # LR = 0.05
-    # EPSILON = 0.02
-    # MAX_EPISODE = 50000
-    # MAX_STEP = 200
-    # DISCOUNT = 1 #0.99
-    # MIN_STREAK = MAX_EPISODE
-    # RENDER = True
-    # SIMULATE = False
-
-    # OP_VI = 1 # 0 = Argmax, 1 = Softmax
-
-    # print(env.state)
-
-    # if SIMULATE:
-    #     q_table = simulate()
-    #     path = "qtable2_10x10"
-    #     np.save(path,q_table)
-    # else:
-    #     path = "qtable2_10x10.npy"
-    #     q_table = np.load(open(path,'rb'))
-
-    # v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    # v_vector = boltz_rational(env,0.01)
-
-    # for i in range(NUM_BUCKETS[0]):
-    #     for j in range(NUM_BUCKETS[1]):
-    #         state = state_to_bucket([i,j])
-    #         v_from_q[i,j] = np.max(q_table[state])
-    # v_from_q[tuple(env.observation_space.high)] = 1
-    # _, walls_list = edges_and_walls_list_extractor(env)
-
-
-    # #print(select_action_from_v(env,[0,0],v_from_q))
-    # #reward_tab = get_reward(env)
-
-    # # print(env.state)
-    # # print(env.step("E")[0])
-    # # print(env.step("S")[0])
-
-    # boltz_rational_noisy(env,q_table,1e-4)
-    # generate_traj_v(env,v_vector)
-    # generate_traj_v(env,v_from_q)
-
-
-    # maze_size = MAX_SIZE[0]
     
-    
-
-
-
-
-
-    # v_vector = boltz_rational(env,1)
-    # print("Boltzmann value function :\n",v_vector)
-    #
-    # v_from_q = np.zeros((NUM_BUCKETS[0],NUM_BUCKETS[1]))
-    # for i in range(NUM_BUCKETS[0]):
-    #     for j in range(NUM_BUCKETS[1]):
-    #         state = state_to_bucket([i,j])
-    #         v_from_q[i,j] = np.max(q_table[state])
-    #
-    # print("\nV(s) = Q(s,pi(s)) :\n",v_from_q)
-
-    # generate_traj_v(env,v_vector)
-    # generate_traj_v(env,v_from_q)
-
-
-    # traj = []
-    # beta = [1e-1,1e-3]
-    # beta = [1e-4,1e-5]
-    # for b in beta:
-    #     print(b)
-    # demo = boltz_rational_noisy(env,q_table,1e-4)
-    # print(env.state)
-    # s = env.env.reset([0,0])
-    # env.render()
-    # print(env.state)
-    #demo = boltz_rational_noisy(env,q_table,1e-5)
-
-    #while True:
-
-    # _=env.reset()
-    # env.env.reset(np.array([0,0]))
-    # demo = boltz_rational_noisy(env,q_table,1e-4)
-    # traj.append(demo)
-    #
-    # print("Trajectory length",[len(t) for t in traj])
-    # len_traj = [len(t) for t in traj]
-    #
-    # plt.hist(len_traj,density=True)
-    # plt.show()
-    # print("Min trajectory length",np.min([len(t) for t in traj]))
-    # print("Max trajectory length",np.max([len(t) for t in traj]))
-    # print("Mean",np.mean([len(t) for t in traj]))
-    # print("Standard deviation",np.std([len(t) for t in traj]))
-
-    # print("IN")
-    # state = state_to_bucket(env.state)
-    # print(state)
-    # EPSILON = 0
-    # a = []
-    # env.render()
-    #
-    # for k in range(MAX_STEP):
-    #     action = select_action(state,q_table,0)
-    #     a.append(action)
-    #     new_s, reward, done, _ = env.step(action)
-    #     new_s = state_to_bucket(new_s)
-    #     state = new_s
-    #
-    #     if RENDER:
-    #         env.render()
-    #         time.sleep(0.1)
-    #     if done :
-    #         break
-    #
-    # print(len(a),"itérations -> ",action2str(a))
