@@ -9,11 +9,11 @@ import time
 
 # LR = 0.05
 # EPSILON = 0.02
-MAX_EPISODE = 10000
+MAX_EPISODE = 20000
 MAX_STEP = 200
 # DISCOUNT = 1
 MIN_STREAK = MAX_EPISODE
-RENDER = True
+RENDER = 0
 SIMULATE = False
 RENDER_TIME = 0.1
 
@@ -34,6 +34,8 @@ class MyMaze():
 
         self.reward_table = self.get_reward()
         self.new_state_table = self.get_new_state()
+        self.optimal_policy = []
+
 
         # MAX_SIZE = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
         # NUM_BUCKETS = MAX_SIZE
@@ -101,6 +103,21 @@ class MyMaze():
 
         return new_state_tab
 
+
+    def set_optimal_policy(self,q_table):
+
+        optimal_policy = np.zeros((self.maze_size,self.maze_size),dtype=int)
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
+
+                optimal_policy[i,j] = np.argmax(q_table[tuple([i,j])])
+
+
+        self.optimal_policy = optimal_policy
+
+
+
+
     def select_action_from_v(self,state,v):
 
         v_choice = []
@@ -113,14 +130,14 @@ class MyMaze():
             reward = self.reward_table[tuple(state)+(a,)]
             v_choice.append(reward + self.discount*v[tuple(new_state)])
 
-        print(v_choice)
+        #print(v_choice)
 
-        v_choice = np.array(v_choice)
-        b = np.max(v_choice)
-        x = np.exp((v_choice-b)*1)/np.sum(np.exp((v_choice-b)*1))
-        action = np.random.choice([0,1,2,3],p=x)
+        # v_choice = np.array(v_choice)
+        # b = np.max(v_choice)
+        # x = np.exp((v_choice-b)*1)/np.sum(np.exp((v_choice-b)*1))
+        # action = np.random.choice([0,1,2,3],p=x)
 
-        #action = np.argmax(v_choice)
+        action = np.argmax(v_choice)
 
         return action
 
@@ -135,7 +152,10 @@ class MyMaze():
 
         for e in tqdm(range(MAX_EPISODE)):
 
-            obv = self.env.env.reset(np.array([0,0]))
+
+            random_reset = np.random.randint(self.maze_size,size=2)
+            obv = self.env.env.reset(random_reset)
+            #print(self.env.state)
             self.env._elapsed_steps = 0
 
             state = tuple(obv)
@@ -175,23 +195,23 @@ class MyMaze():
 
 
 
-    def update_q(self,q,a,s,s1,r,done):
+    def update_q(self,q_table,action,state,new_state,reward,done):
 
-        s = tuple(s)
-        s1 = tuple(s1)
+        state = tuple(state)
+        new_state = tuple(new_state)
 
         if done:
-            td = r - q[s+(a,)]
+            td = reward - q_table[state+(action,)]
             #print("IN")
         else:
-            td = r + self.discount*np.max(q[s1+(a,)]) - q[s+(a,)]
+            td = reward + self.discount*np.max(q_table[new_state]) - q_table[state+(action,)]
 
-        q[s+(a,)] += self.lr*td
+        q_table[state+(action,)] += self.lr*td
 
 
     def get_epsilon(self,e):
 
-        return max(self.epsilon,0.1 - e*self.epsilon/(MAX_EPISODE*0.60))
+        return max(self.epsilon,0.3 - e*self.epsilon/(MAX_EPISODE*0.60))
 
     def select_action(self,state,q,e):
         e = np.random.rand(1)[0]
@@ -346,16 +366,80 @@ class MyMaze():
                                 reward = -c*np.log(1+abs(reward))
 
                             x.append(reward + self.discount*v_temp[tuple(new_state)])
-                        #if new_state!=state:
-                        #print(x)
+
                         v_vector[state] = np.max(x)#reward + self.discount*v_temp[tuple(new_state)]
 
                         err = max(err,abs(v_vector[state]-v))
+
+
+        print("VI prospect bias done")
+        return v_vector
+
+
+
+    def myopic_discount(self,disc):
+
+
+        #v_vector = np.random.rand(self.maze_size,self.maze_size)
+        v_vector = np.zeros((self.maze_size,self.maze_size),dtype=float)
+        # end = self.env.observation_space.high
+        # v_vector[end] = 1
+
+        self.env.reset()
+
+        err=2
+        threshold = 1e-8
+
+        while err > threshold:
+
+            
+            err = 0
+            v_temp = np.copy(v_vector)
+
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
+
+                    
+
+                    state = tuple([i,j])
+                    
+                    if (state==tuple([self.maze_size-1,self.maze_size-1])):
+                        #print("IN",state)
+                        break
+
+                    self.env.env.reset(state)
+                    v = v_temp[state]
+                    x = []
+
+                    optimal_action = self.optimal_policy[state]
+
+
+                    for a in range(4):
+
+                        new_state = self.new_state_table[state+(a,)]
+
+                        # if a!=optimal_action:
+                        #     reward = -1
+                        # else:
+                        #     reward = 1
+
+                        #reward = self.reward_table[state+(a,)]
+                        x.append(reward + disc*v_temp[new_state])
+
+
+                    v_vector[state] = np.max(x)
+
+ 
+            err = np.max(v_temp-v_vector)
                     #time.sleep(2)
             #print(err)
-        #v_vector[state] = env.tab[env.end[0],env.end[1]]
+            #time.sleep(2)
 
+        end = self.env.observation_space.high
+        v_vector[tuple(end)] = 1
+        print("VI myopic discount done")
         return v_vector
+
 
     def generate_traj_v(self,v):
 
@@ -386,28 +470,27 @@ class MyMaze():
 
 
 
-    def edges_and_walls_list_extractor(env):
+    def edges_and_walls_list_extractor(self):
 
           edges_list = []
           walls_list = []
-          maze = env.env.maze_view.maze
+          maze = self.env.env.maze_view.maze
 
-          maze_size = MAX_SIZE[0]
-          print(maze_size)
+          
           # top line and left line
-          for i in range(0,maze_size):
+          for i in range(0,self.maze_size):
               walls_list.append([[0,0],[i,i+1]]) # north walls
               walls_list.append([[i,i+1],[0,0]]) # west walls
 
           # other matplotlib.lines
-          for i in range(0,maze_size):
-              for j in range(0,maze_size):
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
                   walls_list.append([[i+1,i+1],[j,j+1]]) # south walls
                   walls_list.append([[i,i+1],[j+1,j+1]]) # east walls
 
 
-          for i in range(0,maze_size):
-              for j in range(0,maze_size):
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
                   maze_cell = maze.get_walls_status(maze.maze_cells[j,i])
                   if maze_cell['N']==1 and [[i,i],[j,j+1]] in walls_list:
                       walls_list.remove([[i,i],[j,j+1]])
@@ -418,8 +501,8 @@ class MyMaze():
                   if maze_cell['W']==1 and [[i,i+1],[j,j]] in walls_list:
                       walls_list.remove([[i,i+1],[j,j]])
 
-          for i in range(0,maze_size):
-              for j in range(0,maze_size):
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
                   idx = i + j*maze_size
                   if [[i,i],[j,j+1]] not in walls_list:
                       edges_list.append((idx,idx-1,1))

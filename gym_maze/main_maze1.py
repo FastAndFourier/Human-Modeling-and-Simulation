@@ -28,20 +28,30 @@ if __name__ == "__main__":
     m = MyMaze("maze-sample-10x10-v0")
 
 
-    path = "qtable2_10x10.npy"
+    path = "qtable3_10x10.npy"
     q_table = np.load(open(path,'rb'))
 
     #q_table = m.simulate()
+    #np.save(path,q_table)
 
-    #m.boltz_rational_noisy(q_table,1e-4)
+    m.set_optimal_policy(q_table)
+    
+    # m.env.reset()
+    # m.env.render()
+    # while (m.env.state!=[9,9]).any():
+    #     m.env.step(int(m.optimal_policy[tuple(m.env.state)]))
+    #     m.env.render()
+    #     time.sleep(0.2)
 
-    #v_from_q = m.v_from_q(q_table)
-    #print(v_from_q)
+
+    v_from_q = m.v_from_q(q_table)
     
     #m.generate_traj_v(v_from_q)
-    v_vector = m.boltz_rational(1,1e-7)
-    v_vector_prospect = m.prospect_bias(1,0.05)
-    m.generate_traj_v(v_vector)
+    #v_vector = m.boltz_rational(1,1e-7)
+    #v_vector_prospect = m.prospect_bias(1e8,1e-7)
+    v_vector_discount1 = m.myopic_discount(0.2)
+    print("Vdiscount : \n",v_vector_discount1)
+    #m.generate_traj_v(v_vector)
 
 
     _, walls_list = edges_and_walls_list_extractor(m.env)
@@ -55,7 +65,7 @@ if __name__ == "__main__":
     ax_V.set_ylim(maze_size+0.5,-1.5)
     ax_V.set_aspect('equal')
     
-    value_table = v_vector
+    value_table = v_vector_discount1
     
     position = np.zeros(NUM_BUCKETS,dtype=list)
     direction = np.zeros(NUM_BUCKETS,dtype=list)
