@@ -49,9 +49,18 @@ if __name__ == "__main__":
     #m.generate_traj_v(v_from_q)
     #v_vector = m.boltz_rational(1,1e-7)
     #v_vector_prospect = m.prospect_bias(1e8,1e-7)
-    v_vector_discount1 = m.myopic_discount(0.2)
-    print("Vdiscount : \n",v_vector_discount1)
+    v_vector_discount1 = m.myopic_discount(0.5)
+    #print("Vdiscount : \n",v_vector_discount1)
     #m.generate_traj_v(v_vector)
+
+    #v_vector_boltz1000 = m.boltz_rational(1)
+    # v_vector_boltz1 = m.boltz_rational(1)
+    # v_vector_boltz0 = m.boltz_rational(0)
+    #v_vector_dbs, q_table_dbs = m.value_iteration_dynamic_boltzmann(1000)
+    #v_from_dbs_q = m.v_from_q(q_table_dbs)
+    #m.generate_traj_v(v_vector_boltz1000)
+    # m.generate_traj_v(v_vector_boltz1)
+    # m.generate_traj_v(v_vector_boltz0)
 
 
     _, walls_list = edges_and_walls_list_extractor(m.env)
@@ -61,8 +70,8 @@ if __name__ == "__main__":
     ax_policy.set_ylim(maze_size+0.5,-1.5)
     ax_policy.set_aspect('equal')
     
-    ax_V.set_xlim(-1.5,maze_size+0.5)
-    ax_V.set_ylim(maze_size+0.5,-1.5)
+    ax_V.set_xlim(-1,maze_size)
+    ax_V.set_ylim(maze_size,-1)
     ax_V.set_aspect('equal')
     
     value_table = v_vector_discount1
@@ -99,7 +108,7 @@ if __name__ == "__main__":
         for state in range(0,MAX_SIZE[0]*MAX_SIZE[1]):
             i=state//maze_size
             j=state%maze_size
-            text = ax_V.text(i,j, str(value_table[i,j])[0:4],ha="center", va="center", color="w")
+            text = ax_V.text(i,j, str(value_table[i,j])[0:4],ha="center", va="center", color="black")
     
     
     # # draw start and end position
