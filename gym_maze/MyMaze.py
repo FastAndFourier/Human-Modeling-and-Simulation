@@ -9,13 +9,16 @@ import time
 
 # LR = 0.05
 # EPSILON = 0.02
-MAX_EPISODE = 20000
-MAX_STEP = 200
+MAX_EPISODE = 10000
+MAX_STEP = 500
 # DISCOUNT = 1
 MIN_STREAK = MAX_EPISODE
-RENDER = 0#1
-SIMULATE = False
-RENDER_TIME = 0.1
+RENDER = 1 #0
+SIMULATE = 0
+RENDER_TIME = 0.05
+
+REWARD_T = "human" #"env", "human"
+OPE = "softmax" #"argmax", "softmax"
 
 
 
@@ -132,6 +135,52 @@ class MyMaze():
 
 
 
+    def select_action_from_v(self,state,v,reward_type,operator):
+
+        v_choice = []
+        self.env.env.reset(np.array(state))
+
+
+        for a in range(4):
+
+            new_state = self.new_state_table[tuple(state) + (a,)]
+
+            if reward_type=="human":
+                optimal_action = self.optimal_policy[tuple(state)]
+
+                #print(a,optimal_action)
+                if a==optimal_action:
+                    reward = 1
+                else:
+                    reward = -1
+
+            elif reward_type=="env":
+                reward = self.reward_table[tuple(state)+(a,)]
+
+            else:
+                print("Unknown reward type")
+
+
+            v_choice.append(reward + self.discount*v[tuple(new_state)])
+
+
+        p = np.exp(v_choice)/np.sum(np.exp(v_choice))
+        h = -np.sum(p*np.log(p))
+
+        if operator=="argmax":
+            action = np.argmax(v_choice)
+
+        elif operator=="softmax":
+            v_choice = np.array(v_choice)
+            b = np.max(v_choice)
+            x = np.exp((v_choice-b)*1)/np.sum(np.exp((v_choice-b)*1))
+            action = np.random.choice([0,1,2,3],p=x)
+
+        
+
+        return action,h
+
+    """
     def select_action_from_v(self,state,v):
 
         v_choice = []
@@ -189,7 +238,7 @@ class MyMaze():
         action = np.argmax(v_choice)
 
         return action
-
+    """
     ############################ Q-LEARNING ########################################
 
     def simulate(self):
@@ -343,7 +392,7 @@ class MyMaze():
 
         it=0
 
-        while err>threshold:
+        while err>threshold and it<2000:
 
             v_temp = np.copy(v_vector)
             err=0
@@ -363,7 +412,6 @@ class MyMaze():
                     for a in range(4):
 
                         new_state = self.new_state_table[tuple(state) + (a,)]
-
                         optimal_action = self.optimal_policy[state]
 
 
@@ -374,10 +422,8 @@ class MyMaze():
 
                         x.append(reward + self.discount*v_vector[tuple(new_state)])
 
-                    #print(x)
                     x = np.array(x)
                     b = np.max(x)
-                    #print(x)
                     v_vector[tuple(state)] = np.sum(x*np.exp((x-b)*beta))/np.sum(np.exp((x-b)*beta))
 
                     
@@ -395,62 +441,6 @@ class MyMaze():
         return v_vector
 
 
-
-    def value_iteration_dynamic_boltzmann(self,beta):
-
-        v_vector = np.zeros((self.maze_size,self.maze_size))
-        #v_vector = np.random.rand(self.maze_size,self.maze_size)
-        q_table = np.zeros((self.maze_size,self.maze_size,4), dtype=float)
-
-        end = self.env.observation_space.high
-
-        self.env.reset()
-        self.env.render()
-        threshold = 1e-5
-        err=2
-
-        it=0
-
-        while err>threshold:
-
-            v_temp = np.copy(v_vector)
-            err=0
-
-            for i in range(self.maze_size):
-                for j in range(self.maze_size):
-
-                    state = tuple([i,j])
-
-                    if state==tuple(end):
-                        v_vector[state] = 1
-                        break
-
-                    self.env.env.reset(state)
-
-                    v = v_temp[tuple(state)]
-
-                    for action in range(4):
-                        new_state = self.new_state_table[tuple(state) + (action,)]
-                        reward = self.reward_table[tuple(state)+(action,)]
-                        q_table[state+(action,)] = reward + self.discount*v_temp[new_state]
-
-                    x = np.array(q_table[state])
-                    b = np.max(x)
-                    v_vector[state] = np.sum(x*np.exp((x-b)/beta))/np.sum(np.exp((x-b)/beta))
-                    
-                    err = max(err,abs(v-v_vector[tuple(state)]))
-
-                    #print(x,v_vector[state])
-                    #time.sleep(2)
-
-            it+=1
-
-            if it%1000==0:
-                print("Iteration",it," err =",err)
-
-        print("VI Boltz done")
-        
-        return v_vector, q_table
 
 
     def prospect_bias(self,c):
@@ -550,8 +540,7 @@ class MyMaze():
                         if a!=optimal_action:
                             reward = -1
                         else:
-                            reward = self.reward_table[state+(a,)]
-
+                            reward = 1
                         
                         x.append(reward + disc*v_temp[new_state])
 
@@ -578,12 +567,14 @@ class MyMaze():
         s = tuple(obv)
         it=0
         action_ = []
+        entropy = []
 
         self.env.render()
 
-        while not(done) and it<1000:
+        while not(done):# and it<1000:
 
-            action = self.select_action_from_v_human(s,v)
+            action, h = self.select_action_from_v(s,v,REWARD_T,OPE)
+            entropy.append(h)
             #time.sleep(1)
             new_s,reward,done,_ = self.env.step(int(action))
 
@@ -598,6 +589,12 @@ class MyMaze():
                 time.sleep(RENDER_TIME)
         print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
 
+        
+        plt.figure()
+        plt.plot(entropy)
+        plt.show()
+
+        return action_
 
 
     def edges_and_walls_list_extractor(self):
@@ -605,6 +602,8 @@ class MyMaze():
           edges_list = []
           walls_list = []
           maze = self.env.env.maze_view.maze
+
+          print("walls maze size",self.maze_size)
 
           
           # top line and left line
@@ -633,7 +632,7 @@ class MyMaze():
 
           for i in range(0,self.maze_size):
               for j in range(0,self.maze_size):
-                  idx = i + j*maze_size
+                  idx = i + j*self.maze_size
                   if [[i,i],[j,j+1]] not in walls_list:
                       edges_list.append((idx,idx-1,1))
                       #graph.add_edge(idx,idx-1,1)
@@ -641,10 +640,70 @@ class MyMaze():
                       edges_list.append((idx,idx+1,1))
                       #graph.add_edge(idx,idx+1,1)
                   if [[i,i+1],[j+1,j+1]] not in walls_list:
-                      edges_list.append((idx,idx+maze_size,1))
+                      edges_list.append((idx,idx+self.maze_size,1))
                       #graph.add_edge(idx,idx+maze_size,1)
                   if [[i,i+1],[j,j]] not in walls_list:
-                      edges_list.append((idx,idx-maze_size,1))
+                      edges_list.append((idx,idx-self.maze_size,1))
                       #graph.add_edge(idx,idx-maze_size,1)
 
           return edges_list, walls_list
+
+
+
+    """
+    def value_iteration_dynamic_boltzmann(self,beta):
+
+        v_vector = np.zeros((self.maze_size,self.maze_size))
+        #v_vector = np.random.rand(self.maze_size,self.maze_size)
+        q_table = np.zeros((self.maze_size,self.maze_size,4), dtype=float)
+
+        end = self.env.observation_space.high
+
+        self.env.reset()
+        self.env.render()
+        threshold = 1e-5
+        err=2
+
+        it=0
+
+        while err>threshold:
+
+            v_temp = np.copy(v_vector)
+            err=0
+
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
+
+                    state = tuple([i,j])
+
+                    if state==tuple(end):
+                        v_vector[state] = 1
+                        break
+
+                    self.env.env.reset(state)
+
+                    v = v_temp[tuple(state)]
+
+                    for action in range(4):
+                        new_state = self.new_state_table[tuple(state) + (action,)]
+                        reward = self.reward_table[tuple(state)+(action,)]
+                        q_table[state+(action,)] = reward + self.discount*v_temp[new_state]
+
+                    x = np.array(q_table[state])
+                    b = np.max(x)
+                    v_vector[state] = np.sum(x*np.exp((x-b)/beta))/np.sum(np.exp((x-b)/beta))
+                    
+                    err = max(err,abs(v-v_vector[tuple(state)]))
+
+                    #print(x,v_vector[state])
+                    #time.sleep(2)
+
+            it+=1
+
+            if it%1000==0:
+                print("Iteration",it," err =",err)
+
+        print("VI Boltz done")
+        
+        return v_vector, q_table
+        """

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     plt.ion()
     plt.pause(0.2)
 
-    m = MyMaze("maze-sample-10x10-v0")
+    m = MyMaze("maze-sample-20x20-v0")
 
 
     path = "qtable3_10x10.npy"
@@ -45,11 +45,19 @@ if __name__ == "__main__":
 
 
     v_from_q = m.v_from_q(q_table)
+
+    #v_vector_discount1 = m.myopic_discount(0.5)
+    #v_vector_boltz1 = m.boltz_rational(1000)
+    m.generate_traj_v(v_from_q)
+
+
+
+
     
     #m.generate_traj_v(v_from_q)
     #v_vector = m.boltz_rational(1,1e-7)
     #v_vector_prospect = m.prospect_bias(1e8,1e-7)
-    v_vector_discount1 = m.myopic_discount(0.5)
+    
     #print("Vdiscount : \n",v_vector_discount1)
     #m.generate_traj_v(v_vector)
 
@@ -74,7 +82,7 @@ if __name__ == "__main__":
     ax_V.set_ylim(maze_size,-1)
     ax_V.set_aspect('equal')
     
-    value_table = v_vector_discount1
+    value_table = v_from_q
     
     position = np.zeros(NUM_BUCKETS,dtype=list)
     direction = np.zeros(NUM_BUCKETS,dtype=list)
@@ -84,7 +92,7 @@ if __name__ == "__main__":
         for j in range(maze_size):
             if ([i,j]==[maze_size-1,maze_size-1]):
                 break
-            action = m.select_action_from_v([i,j],value_table)
+            action = m.select_action_from_v([i,j],value_table,"env","argmax")
             #print([i,j],action)
 
             if action==0:
