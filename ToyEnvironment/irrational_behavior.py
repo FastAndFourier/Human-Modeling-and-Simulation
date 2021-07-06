@@ -1,7 +1,8 @@
-#from Grid import *
-import irrationality.Grid
+from Grid import *
 import numpy as np
 
+
+## Irrational biases obtained by modifying Bellman update equation ##
 
 def value_iterate(env):
     v_vector = np.zeros((env.size[1]*env.size[0]))
@@ -50,7 +51,7 @@ def boltz_rational(env,beta):
             v = v_vector[s]
             x = []
             for a in range(4):
-                [new_s,reward,done] =.reshape(grid2.shape) env.step(a)
+                [new_s,reward,done] = env.step(a)
                 if new_s!=env.state:
                     x.append(reward + env.discount*v_temp[ind2sub(env.size[1],new_s)])
                 else:

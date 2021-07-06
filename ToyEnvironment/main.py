@@ -4,7 +4,7 @@ from boltzmann_rational import *
 from irrational_behavior import *
 import numpy as np
 
-print("Création de l'environnement 1 ... \n")
+print("Environment 1 initialization (boltzmann noisy-rational and irrational bias) ... \n")
 oox = grid([5,6])
 oox.add_end([2,5])
 oox.add_danger([2,4])
@@ -20,32 +20,27 @@ oox.print_env()
 step_, err_ = oox.q_learning(50,50000)
 
 vi = value_iterate(oox)
-print(vi)
 
-print("Trajectoires Boltzmann VI :")
+print("Trajectories Boltzmann VI :")
 beta = [0,0.5,1,10]
 for b in beta:
     vB = boltz_rational(oox,b)
     print(vB)
     print("Beta = ",b," :",end=" ")
     generate_traj_v(oox,vB,[3,3])
+    print("\n")
 
-print("\nTrajectoires Boltzmann noisy-rational :")
+print("\nTrajectories Boltzmann noisy-rational :")
 beta = [10000,2,0.1,0.02]
 for b in beta:
     print("Beta = ",1/b," :",end=" ")
     demo, start_ = boltz_rational_noisy(oox,b,1,[3,3])
     oox.reset([3,3])
-    print("Start =",start_,"-> ",len(demo[0]),"itérations",end="")
-    print(action2str(demo[0]))
-    #print("V_boltz (beta = ",beta,") = \n",vB,"\n")
-# v_from_q = np.zeros(v.shape)
-# for k in range(np.size(v_from_q)):
-#     print("k = ",k,oox.q_table[:,k])
-#     v_from_q[k] = np.max(oox.q_table[:,k])
-# print("V = Q(s,pi(s)) = \n",v_from_q)
+    print("Start =",start_,"-> ",len(demo[0]),"iterations",end="")
+    print(action2str(demo[0]),"\n")
 
-print("\n\nCréation de l'environment 2 ...\n")
+
+print("\n\nEnvironment 2 initialization (prospect bias) (...\n")
 
 grid1 = grid([5,5])
 grid1.add_end([0,4])
@@ -73,13 +68,11 @@ step_, err_ = grid1.q_learning(50,50000)
 print("Prospect bias :")
 vP = prospect_bias(grid1,4)
 vP1 = prospect_bias(grid1,5)
-print(vP)
-print(vP1)
 print("\n")
 generate_traj_v(grid1,vP,[0,0])
 generate_traj_v(grid1,vP1,[0,0])
 
-print("\n\nCréation de l'environment 3 ...\n")
+print("\n\nEnvironment 3 initialization (extremal)...\n")
 
 grid2 = grid([5,5])
 grid2.add_end([1,4])
@@ -98,8 +91,7 @@ step_, err_ = grid2.q_learning(200,50000)
 print("\nExtremal :")
 vE = extremal(grid2,0)
 vE1 = extremal(grid2,1)
-print(vE.reshape(grid2.size))
-print(vE1.reshape(grid2.size))
+
 print("\n")
 generate_traj_v(grid2,vE,[0,0])
 generate_traj_v(grid2,vE1,[0,0])

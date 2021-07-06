@@ -2,7 +2,7 @@
 
 from Grid import *
 
-## Noisily-rational behaviour generation ##
+## Noisy-rational behaviour generation ##
 
 def boltz_rational_noisy(grid_,tau,n,start_):
     # Tau : temperature coefficient
@@ -26,6 +26,9 @@ def boltz_rational_noisy(grid_,tau,n,start_):
         grid_.reset(grid_.start)
     return a, grid_.start
 
+
+## Generates trajectories with every possible starting points following 
+## a policy derived from a Q-table
 
 def any_traj(grid_):
 
