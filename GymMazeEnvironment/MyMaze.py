@@ -13,7 +13,7 @@ MAX_EPISODE = 10000
 MAX_STEP = 500
 # DISCOUNT = 1
 MIN_STREAK = MAX_EPISODE
-RENDER = 1 #0
+RENDER = 1
 SIMULATE = 0
 RENDER_TIME = 0.05
 
@@ -30,8 +30,7 @@ class MyMaze():
         #print(self.env)
         self.env.render()
 
-        self.maze_size = tuple((self.env.observation_space.high + np.ones(self.env.observation_space.shape)).astype(int))[0]
-        self.lr = lr
+        self.maze_size = self.env.observation_space.high[0] + 1
         self.epsilon = epsi
         self.discount = disc
 
@@ -98,6 +97,8 @@ class MyMaze():
         state = self.env.reset()
         state = tuple(state)
 
+        dic_action = ["N","S","E","W"]
+
         for i in range(self.maze_size):
             for j in range(self.maze_size):
 
@@ -105,7 +106,8 @@ class MyMaze():
 
                 for a in range(4):
                     self.env.env.reset(state)
-                    new_s,r,_,_ = self.env.step(a)
+                    new_s,r,_,_ = self.env.step(int(a))
+                    #print(state,dic_action[a],new_s)
                     new_state_tab[tuple(state)+(a,)] = tuple(new_s)
 
 
@@ -115,15 +117,34 @@ class MyMaze():
 
         # Outputs transition matrix T(s,a,s')
 
-        transition_tab = np.zeros((self.maze_size,self.maze_size,4),dtype=tuple)
+        transition_tab = np.zeros((self.maze_size*self.maze_size,self.maze_size*self.maze_size,4),dtype=tuple)
 
         #Deterministic case
 
-        state = self.env.reset()
-        state = tuple(state)
+        dic_action = ["N","S","E","W"]
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
 
-        # for i in range(self.maze_size):
-        #     for j in range(self.maze_size):
+                state = self.env.env.reset(np.array([i,j]))
+                state = tuple(state)
+
+                for a in range(4):
+                    new_state = self.new_state_table[tuple(state)+(a,)]
+                    lin_state = state[0]*self.maze_size+state[1]
+                    #print(state,lin_state)
+                    lin_new_state = new_state[0]*self.maze_size+new_state[1]
+                    #print(state,"--",dic_action[a],"->",new_state)
+
+                    if tuple(new_state)==state:
+                        transition_tab[lin_state,lin_state,a] = 1
+                        
+                    else:
+                        transition_tab[lin_state,lin_new_state,a] = 1
+                #print("\n")
+
+        return transition_tab
+
+                 
 
 
 
@@ -182,6 +203,7 @@ class MyMaze():
 
 
         p = np.exp(v_choice)/np.sum(np.exp(v_choice))
+        #print(p)
         h = -np.sum(p*np.log(p))
 
         if operator=="argmax":
@@ -198,7 +220,7 @@ class MyMaze():
         return action,h
 
 
-    def generate_traj_v(self,v):
+    def generate_traj_v(self,v,operator):
 
         # Generates trajectory following a policy derived from value function v
         # If RENDER=True, the trajectory is displayed on the GymMaze graphical environment
@@ -215,7 +237,7 @@ class MyMaze():
 
         while not(done):# and it<1000:
 
-            action, h = self.select_action_from_v(s,v,REWARD_T,OPE)
+            action, h = self.select_action_from_v(s,v,REWARD_T,operator)
             entropy.append(h)
             new_s,reward,done,_ = self.env.step(int(action))
 
@@ -231,7 +253,7 @@ class MyMaze():
                 
         print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
 
-        if RENDEER:
+        if RENDER:
             plt.figure()
             plt.plot(entropy)
             plt.show()
@@ -247,8 +269,6 @@ class MyMaze():
           edges_list = []
           walls_list = []
           maze = self.env.env.maze_view.maze
-
-          print("walls maze size",self.maze_size)
 
           
           # top line and left line
@@ -430,6 +450,121 @@ class MyMaze():
 
         return v
 
+
+    def value_iteration(self):
+
+        # Regular Value iteration
+
+        v_vector = np.zeros((self.maze_size,self.maze_size))
+
+        end = self.env.observation_space.high
+
+        self.env.reset()
+        threshold = 1e-5
+        err = 2
+
+        while err > threshold:
+            v_temp = np.copy(v_vector)
+            err = 0
+
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
+
+                    state = tuple([i,j])
+                    lin_state = i*self.maze_size+j
+
+                    if state == tuple(end):
+                        break
+
+                    else:
+                        v = v_temp[state]
+                        x = []
+
+                        for a in range(4):
+
+                            y = []
+
+                            for k in range(self.maze_size):
+                                for l in range(self.maze_size):
+
+                                    if tuple([k,l])==tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size*self.maze_size)
+
+                                    lin_new_state = k*self.maze_size+l
+                                    y.append(self.transition_table[lin_state,lin_new_state,a]*(reward+self.discount*v_vector[k,l]))
+
+                            x.append(np.sum(np.array(y)))
+
+                        v_vector[state] = np.max(np.array(x))
+                        err = max(err,abs(v-v_vector[tuple(state)]))
+
+        v_vector[tuple(end)] = 1
+
+        return v_vector
+
+    def boltz_value_iteration(self,beta):
+
+        # Regular Value iteration
+
+        v_vector = np.zeros((self.maze_size,self.maze_size))
+
+        end = self.env.observation_space.high
+
+        self.env.reset()
+        threshold = 1e-5
+        err = 2
+
+        start = time.time()
+
+        while err > threshold:
+            v_temp = np.copy(v_vector)
+            err = 0
+
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
+
+                    state = tuple([i,j])
+                    lin_state = i*self.maze_size+j
+
+                    if state == tuple(end):
+                        break
+
+                    else:
+                        v = v_temp[state]
+                        x = []
+                        optimal_action = self.optimal_policy[state]
+
+                        for a in range(4):
+
+                            y = 0
+                            if a == optimal_action:
+                                reward = 1
+                            else:
+                                reward = -1
+
+                            non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)
+                            for k in non_zero_new_state:
+
+                                y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_vector[k//self.maze_size,k%self.maze_size])
+
+
+                            x.append(np.sum(np.array(y)))
+
+                        x = np.array(x)
+                        b = np.max(x)
+                        v_vector[tuple(state)] = np.sum(x*np.exp((x-b)*beta))/np.sum(np.exp((x-b)*beta))
+
+                        err = max(err,abs(v-v_vector[tuple(state)]))
+
+        print("duration",(time.time()-start))
+        print("VI Boltz done")
+
+        v_vector[tuple(end)] = 1
+
+        return v_vector
+
     def boltz_rational(self,beta):
 
         v_vector = np.zeros((self.maze_size,self.maze_size))
@@ -443,6 +578,7 @@ class MyMaze():
         err=2
 
         it=0
+        start = time.time()
 
         while err>threshold and it<2000:
 
@@ -486,6 +622,7 @@ class MyMaze():
             if it%1000==0:
                 print("Iteration",it," err =",err)
 
+        print("duration",time.time()-start)
         print("VI Boltz done")
         
         v_vector[tuple(end)] = 1

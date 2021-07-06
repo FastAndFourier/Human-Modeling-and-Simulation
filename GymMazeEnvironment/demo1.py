@@ -15,8 +15,8 @@ from MyMaze import *
 
 if __name__ == "__main__":
 
-	#fig_policy = plt.figure()
-	#ax_policy = fig_policy.gca()
+	fig_policy = plt.figure()
+	ax_policy = fig_policy.gca()
 	fig_V = plt.figure()
 	ax_V = fig_V.gca()
 	fig_V1 = plt.figure()
@@ -38,13 +38,18 @@ if __name__ == "__main__":
 
 	v_from_q = m.v_from_q(q_table)
 	# v_boltz0 = m.boltz_rational(0)
-	v_boltz0 = m.boltz_rational(0)
-	v_boltz5 = m.boltz_rational(5)
+	v_boltz0 = m.boltz_value_iteration(0.1)
+	v_boltz5 = m.boltz_value_iteration(100)
+
+
+	#v_boltz5 = m.boltz_rational(5)
 	# v_myopic099 = m.myopic_discount(0.99)
 	# v_myopic01 = m.myopic_discount(0.1)	
 
+	m.generate_traj_v(v_boltz0,"softmax")
+	m.generate_traj_v(v_boltz5,"softmax")
 
-	#m.generate_traj_v(v_boltz5)
+	#m.generate_traj_v(v_boltz5,"argmax")
 
 
 
@@ -96,7 +101,7 @@ if __name__ == "__main__":
 		length = 0
 		
 		while (m.env.state!=m.env.observation_space.high).any():
-			action = m.select_action_from_v(state,value_table,"human",softmax)[0]
+			action = m.select_action_from_v(state,value_table,"human",operator)[0]
 			new_s,reward,done,_ = m.env.step(int(action))
 			state = new_s
 			traj[tuple(state)]+=1

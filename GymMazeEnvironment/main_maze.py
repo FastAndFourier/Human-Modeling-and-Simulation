@@ -25,10 +25,22 @@ if __name__ == "__main__":
     plt.ion()
     plt.pause(0.2)
 
-    m = MyMaze("maze-sample-10x10-v0")
+    m = MyMaze("maze-sample-5x5-v0")
+    path = "./Q-Table/qtable1_5x5.npy"
+    #q_table = m.q_learning()
+    #np.save(path,q_table)
+    q_table = np.load(open(path,'rb'))
+    m.set_optimal_policy(q_table)
 
+    vi_vector = m.boltz_value_iteration(0)
+    v_from_q = m.v_from_q(q_table)
 
-    path = "qtable2_10x10.npy"
+    m.generate_traj_v(vi_vector)
+
+    while True:
+        m.env.render()
+
+    path = "./Q-Table/qtable2_5x5.npy"
     q_table = np.load(open(path,'rb'))
 
     #q_table = m.simulate()
@@ -43,7 +55,7 @@ if __name__ == "__main__":
     #m.generate_traj_v(v_vector)
 
 
-    _, walls_list = edges_and_walls_list_extractor(m.env)
+    _, walls_list = m.edges_and_walls_list_extractor()
     maze_size = m.maze_size
 
     ax_policy.set_xlim(-1.5,maze_size+0.5)
