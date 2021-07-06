@@ -53,8 +53,8 @@ class MyMaze():
     ################# HELPER FUNCTIONS #############################################
 
     def action2str(self,demo):
-
         #Turn action index into str
+
         res=[]
         for i in demo:
             if i==0:
@@ -70,6 +70,8 @@ class MyMaze():
     
 
     def get_reward(self):
+
+        # Outputs an array with every possible reward (for every action) on every state
 
         reward_tab = np.zeros((self.maze_size,self.maze_size,4))
         state = self.env.reset()
@@ -90,6 +92,8 @@ class MyMaze():
 
     def get_new_state(self):
 
+        # Outputs an array with every new state reached after executing action A from a state S
+
         new_state_tab = np.zeros((self.maze_size,self.maze_size,4),dtype=tuple)
         state = self.env.reset()
         state = tuple(state)
@@ -109,6 +113,8 @@ class MyMaze():
 
     def get_transition_probalities(self):
 
+        # Outputs transition matrix T(s,a,s')
+
         transition_tab = np.zeros((self.maze_size,self.maze_size,4),dtype=tuple)
 
         #Deterministic case
@@ -123,6 +129,8 @@ class MyMaze():
 
     def set_optimal_policy(self,q_table):
 
+        # Sets optimal policy from a given Q-table
+
         optimal_policy = np.zeros((self.maze_size,self.maze_size),dtype=int)
         for i in range(self.maze_size):
             for j in range(self.maze_size):
@@ -136,6 +144,15 @@ class MyMaze():
 
 
     def select_action_from_v(self,state,v,reward_type,operator):
+
+        # Selects action following a policy given a Value-function v
+
+        # -> reward_type: either "env" (reward given by GymMaze = -1/num_tile for every step) 
+        #                 or "human" (+1 if action=optimal_action, -1 otherwise)
+
+        # -> operator: selection operator, either "argmax" or "softmax" 
+        #              "softmax" is mainly used for the boltzmann irrational bias which already uses a Boltzmann (or Gibbs, softmax) summary operator.
+        #              Here, the softmax operator is used to turn expected rewards into a distribution over actions. 
 
         v_choice = []
         self.env.env.reset(np.array(state))
@@ -180,70 +197,107 @@ class MyMaze():
 
         return action,h
 
-    """
-    def select_action_from_v(self,state,v):
 
-        v_choice = []
-        self.env.env.reset(np.array(state))
+    def generate_traj_v(self,v):
 
+        # Generates trajectory following a policy derived from value function v
+        # If RENDER=True, the trajectory is displayed on the GymMaze graphical environment
+        # Also, if RENDER=TRUE, the entropy of expected rewards distribution at each step is displayed 
 
-        for a in range(4):
+        done=False
+        obv = self.env.env.reset([0,0])
+        s = tuple(obv)
+        it=0
+        action_ = []
+        entropy = []
 
-            new_state = self.new_state_table[tuple(state) + (a,)]
-            reward = self.reward_table[tuple(state)+(a,)]
-            v_choice.append(reward + self.discount*v[tuple(new_state)])
+        self.env.render()
 
+        while not(done):# and it<1000:
 
-        #print(v_choice)
+            action, h = self.select_action_from_v(s,v,REWARD_T,OPE)
+            entropy.append(h)
+            new_s,reward,done,_ = self.env.step(int(action))
 
-        # v_choice = np.array(v_choice)
-        # b = np.max(v_choice)
-        # x = np.exp((v_choice-b))/np.sum(np.exp((v_choice-b)))
-        # #print(x)
-        # action = np.random.choice([0,1,2,3],p=x)
-
-        action = np.argmax(v_choice)
-
-        return action
-
-    def select_action_from_v_human(self,state,v):
-
-        v_choice = []
-        self.env.env.reset(np.array(state))
-
-        optimal_action = self.optimal_policy[state]
+            it+=1
+            action_.append(action)
+            obv = new_s
+            s = tuple(obv)
 
 
-        for a in range(4):
+            if RENDER:
+                self.env.render()
+                time.sleep(RENDER_TIME)
+                
+        print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
 
-            new_state = self.new_state_table[state+(a,)]
+        if RENDEER:
+            plt.figure()
+            plt.plot(entropy)
+            plt.show()
 
-            if a!=optimal_action:
-                reward = -1
-            else:
-                reward = self.reward_table[state+(a,)]
+        
+        
 
-            
-            v_choices.append(reward + disc*v_temp[new_state])
-       
+        return action_
 
-        #print(v_choice)
 
-        # v_choice = np.array(v_choice)
-        # b = np.max(v_choice)
-        # x = np.exp((v_choice-b))/np.sum(np.exp((v_choice-b)))
-        # #print(x)
-        # action = np.random.choice([0,1,2,3],p=x)
+    def edges_and_walls_list_extractor(self):
 
-        action = np.argmax(v_choice)
+          edges_list = []
+          walls_list = []
+          maze = self.env.env.maze_view.maze
 
-        return action
-    """
+          print("walls maze size",self.maze_size)
+
+          
+          # top line and left line
+          for i in range(0,self.maze_size):
+              walls_list.append([[0,0],[i,i+1]]) # north walls
+              walls_list.append([[i,i+1],[0,0]]) # west walls
+
+          # other matplotlib.lines
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
+                  walls_list.append([[i+1,i+1],[j,j+1]]) # south walls
+                  walls_list.append([[i,i+1],[j+1,j+1]]) # east walls
+
+
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
+                  maze_cell = maze.get_walls_status(maze.maze_cells[j,i])
+                  if maze_cell['N']==1 and [[i,i],[j,j+1]] in walls_list:
+                      walls_list.remove([[i,i],[j,j+1]])
+                  if maze_cell['S']==1 and [[i+1,i+1],[j,j+1]] in walls_list:
+                      walls_list.remove([[i+1,i+1],[j,j+1]])
+                  if maze_cell['E']==1 and [[i,i+1],[j+1,j+1]] in walls_list:
+                      walls_list.remove([[i,i+1],[j+1,j+1]])
+                  if maze_cell['W']==1 and [[i,i+1],[j,j]] in walls_list:
+                      walls_list.remove([[i,i+1],[j,j]])
+
+          for i in range(0,self.maze_size):
+              for j in range(0,self.maze_size):
+                  idx = i + j*self.maze_size
+                  if [[i,i],[j,j+1]] not in walls_list:
+                      edges_list.append((idx,idx-1,1))
+                      #graph.add_edge(idx,idx-1,1)
+                  if [[i+1,i+1],[j,j+1]] not in walls_list:
+                      edges_list.append((idx,idx+1,1))
+                      #graph.add_edge(idx,idx+1,1)
+                  if [[i,i+1],[j+1,j+1]] not in walls_list:
+                      edges_list.append((idx,idx+self.maze_size,1))
+                      #graph.add_edge(idx,idx+maze_size,1)
+                  if [[i,i+1],[j,j]] not in walls_list:
+                      edges_list.append((idx,idx-self.maze_size,1))
+                      #graph.add_edge(idx,idx-maze_size,1)
+
+          return edges_list, walls_list
+
+    
     ############################ Q-LEARNING ########################################
 
-    def simulate(self):
+    def q_learning(self):
 
-        #env.render()
         q_table = np.zeros((self.maze_size,self.maze_size,4), dtype=float)
         streak = 0
         reach = 0
@@ -253,13 +307,11 @@ class MyMaze():
 
             random_reset = np.random.randint(self.maze_size,size=2)
             obv = self.env.env.reset(random_reset)
-            #print(self.env.state)
             self.env._elapsed_steps = 0
 
             state = tuple(obv)
 
             if e%1000==0:
-                #print(get_epsilon(e))
                 print("Episode #",e,"(",reach,")")
 
             for k in range(MAX_STEP):
@@ -357,11 +409,11 @@ class MyMaze():
         return a
 
 
-    """
+    ################################################################################
+    #########################  IRRATIONAL BIASES  ##################################
+    ################################################################################
 
-        IRRATIONAL BIASES
 
-    """
 
     #########################  BOLTZMANN RATIONAL ##################################
 
@@ -441,7 +493,7 @@ class MyMaze():
         return v_vector
 
 
-
+    ####################### PROSPECT BIAS (loss aversion + scope insensitivity) ############################
 
     def prospect_bias(self,c):
         #v_vector = np.random.rand(env.size[1]*env.size[0])
@@ -495,6 +547,7 @@ class MyMaze():
         return v_vector
 
 
+    ######################### MYOPIC DISCOUNT ##########################################################
 
     def myopic_discount(self,disc):
 
@@ -560,93 +613,7 @@ class MyMaze():
         return v_vector
 
 
-    def generate_traj_v(self,v):
-
-        done=False
-        obv = self.env.env.reset([0,0])
-        s = tuple(obv)
-        it=0
-        action_ = []
-        entropy = []
-
-        self.env.render()
-
-        while not(done):# and it<1000:
-
-            action, h = self.select_action_from_v(s,v,REWARD_T,OPE)
-            entropy.append(h)
-            #time.sleep(1)
-            new_s,reward,done,_ = self.env.step(int(action))
-
-            it+=1
-            action_.append(action)
-            obv = new_s
-            s = tuple(obv)
-
-
-            if RENDER:
-                self.env.render()
-                time.sleep(RENDER_TIME)
-        print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
-
-        
-        plt.figure()
-        plt.plot(entropy)
-        plt.show()
-
-        return action_
-
-
-    def edges_and_walls_list_extractor(self):
-
-          edges_list = []
-          walls_list = []
-          maze = self.env.env.maze_view.maze
-
-          print("walls maze size",self.maze_size)
-
-          
-          # top line and left line
-          for i in range(0,self.maze_size):
-              walls_list.append([[0,0],[i,i+1]]) # north walls
-              walls_list.append([[i,i+1],[0,0]]) # west walls
-
-          # other matplotlib.lines
-          for i in range(0,self.maze_size):
-              for j in range(0,self.maze_size):
-                  walls_list.append([[i+1,i+1],[j,j+1]]) # south walls
-                  walls_list.append([[i,i+1],[j+1,j+1]]) # east walls
-
-
-          for i in range(0,self.maze_size):
-              for j in range(0,self.maze_size):
-                  maze_cell = maze.get_walls_status(maze.maze_cells[j,i])
-                  if maze_cell['N']==1 and [[i,i],[j,j+1]] in walls_list:
-                      walls_list.remove([[i,i],[j,j+1]])
-                  if maze_cell['S']==1 and [[i+1,i+1],[j,j+1]] in walls_list:
-                      walls_list.remove([[i+1,i+1],[j,j+1]])
-                  if maze_cell['E']==1 and [[i,i+1],[j+1,j+1]] in walls_list:
-                      walls_list.remove([[i,i+1],[j+1,j+1]])
-                  if maze_cell['W']==1 and [[i,i+1],[j,j]] in walls_list:
-                      walls_list.remove([[i,i+1],[j,j]])
-
-          for i in range(0,self.maze_size):
-              for j in range(0,self.maze_size):
-                  idx = i + j*self.maze_size
-                  if [[i,i],[j,j+1]] not in walls_list:
-                      edges_list.append((idx,idx-1,1))
-                      #graph.add_edge(idx,idx-1,1)
-                  if [[i+1,i+1],[j,j+1]] not in walls_list:
-                      edges_list.append((idx,idx+1,1))
-                      #graph.add_edge(idx,idx+1,1)
-                  if [[i,i+1],[j+1,j+1]] not in walls_list:
-                      edges_list.append((idx,idx+self.maze_size,1))
-                      #graph.add_edge(idx,idx+maze_size,1)
-                  if [[i,i+1],[j,j]] not in walls_list:
-                      edges_list.append((idx,idx-self.maze_size,1))
-                      #graph.add_edge(idx,idx-maze_size,1)
-
-          return edges_list, walls_list
+    
 
 
 
@@ -706,4 +673,62 @@ class MyMaze():
         print("VI Boltz done")
         
         return v_vector, q_table
-        """
+
+    def select_action_from_v(self,state,v):
+
+        v_choice = []
+        self.env.env.reset(np.array(state))
+
+
+        for a in range(4):
+
+            new_state = self.new_state_table[tuple(state) + (a,)]
+            reward = self.reward_table[tuple(state)+(a,)]
+            v_choice.append(reward + self.discount*v[tuple(new_state)])
+
+
+        #print(v_choice)
+
+        # v_choice = np.array(v_choice)
+        # b = np.max(v_choice)
+        # x = np.exp((v_choice-b))/np.sum(np.exp((v_choice-b)))
+        # #print(x)
+        # action = np.random.choice([0,1,2,3],p=x)
+
+        action = np.argmax(v_choice)
+
+        return action
+
+    def select_action_from_v_human(self,state,v):
+
+        v_choice = []
+        self.env.env.reset(np.array(state))
+
+        optimal_action = self.optimal_policy[state]
+
+
+        for a in range(4):
+
+            new_state = self.new_state_table[state+(a,)]
+
+            if a!=optimal_action:
+                reward = -1
+            else:
+                reward = self.reward_table[state+(a,)]
+
+            
+            v_choices.append(reward + disc*v_temp[new_state])
+       
+
+        #print(v_choice)
+
+        # v_choice = np.array(v_choice)
+        # b = np.max(v_choice)
+        # x = np.exp((v_choice-b))/np.sum(np.exp((v_choice-b)))
+        # #print(x)
+        # action = np.random.choice([0,1,2,3],p=x)
+
+        action = np.argmax(v_choice)
+
+        return action
+    """
