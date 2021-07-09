@@ -16,8 +16,8 @@ from MyMaze import *
 
 if __name__ == "__main__":
 
-	fig_policy = plt.figure()
-	ax_policy = fig_policy.gca()
+	# fig_policy = plt.figure()
+	# ax_policy = fig_policy.gca()
 
 	fig_V = plt.figure()
 	ax_V = fig_V.gca()
@@ -26,10 +26,12 @@ if __name__ == "__main__":
 	ax_traj = fig_traj.gca()
 
 
-	fig_policy1 = plt.figure()
-	ax_policy1 = fig_policy1.gca()
+	# fig_policy1 = plt.figure()
+	# ax_policy1 = fig_policy1.gca()
+
 	fig_V1 = plt.figure()
 	ax_V1 = fig_V1.gca()
+
 	fig_traj1 = plt.figure()
 	ax_traj1 = fig_traj1.gca()
 
@@ -81,6 +83,9 @@ if __name__ == "__main__":
 	# m.generate_traj_v(v_boltz01,operator)
 	# m.generate_traj_v(v_boltz1,operator)
 
+	#m.local_uncertainty([10,m.maze_size-8],4)
+	#m.hyperbolic_discount(0)
+
 
 	# diff_myopic = []
 	# diff_hyper = []
@@ -95,20 +100,20 @@ if __name__ == "__main__":
 
 	#m.local_uncertainty([1,1],3)#([10,m.maze_size-8],4)
 
-	v_table0 = m.local_uncertainty([10,m.maze_size-8],4)
-	v_table1 = m.value_iteration()#m.hyperbolic_discount(0)
+	v_table0 = m.value_iteration()
+	v_table1 = m.illusion_of_control(0.1)
 	operator = "softmax"
 
-	# print(diff_myopic)
-	# print(diff_hyper)
+	#m.generate_traj_v(v_table0,operator)
+	#m.generate_traj_v(v_table1,operator)
 	
 	plot_v_value(fig_V,ax_V,m,v_table0,"")
-	plot_policy(fig_policy,ax_policy,m,v_table0,"",operator)
-	ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
+	#plot_policy(fig_policy,ax_policy,m,v_table0,"","argmax")
+	#ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
 	plot_traj(fig_traj,ax_traj,m,v_table0,100,1000,"",operator)
 
 	plot_v_value(fig_V1,ax_V1,m,v_table1,"")
-	plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
+	#plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
 	plot_traj(fig_traj1,ax_traj1,m,v_table1,100,1000,"",operator)
 	
 	
