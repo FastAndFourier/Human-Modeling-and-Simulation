@@ -910,6 +910,8 @@ class MyMaze():
         threshold = 1e-8
         err=2
 
+        start = time.time()
+
         while err>threshold:
 
             v_temp = np.copy(v_vector)
@@ -966,6 +968,7 @@ class MyMaze():
 
             #print(err)
 
+        print("duration",time.time()-start)
         print("Prospect bias done")
         return v_vector
 
