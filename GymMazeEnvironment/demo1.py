@@ -61,6 +61,11 @@ if __name__ == "__main__":
 	m.set_reward(obstacle)
 	
 
+	m_obstacle = MyMaze('maze-sample-20x20-v0')
+	m_obstacle.set_optimal_policy(q_table)
+	obstacle = np.array([[0,3],[1,0],[15,17]])
+	m_obstacle.set_reward(obstacle)
+
 	# h = m.get_entropy_map(q_table)
 
 	# fig_h = plt.figure()
@@ -105,22 +110,22 @@ if __name__ == "__main__":
 
 	#m.local_uncertainty([1,1],3)#([10,m.maze_size-8],4)
 
-	v_table0 = m.value_iteration()
-	v_table1 = m.random_boltz_rational(50,0)
+	v_table0 = m.hyperbolic_discount(0)
+	v_table1 = m.hyperbolic_discount(10)
 
 	operator = "softmax"
 
-	m.generate_traj_v(m.v_from_q(q_table),operator)
-	m.generate_traj_v(v_table1,operator)
+	# m.generate_traj_v(m.v_from_q(q_table),operator)
+	# m.generate_traj_v(v_table1,operator)
 	
-	plot_v_value(fig_V,ax_V,m,v_table0,"")
+	plot_v_value(fig_V,ax_V,m,v_table0,"V-value hyperbolic discount 0")
 	#plot_policy(fig_policy,ax_policy,m,v_table0,"","argmax")
-	plot_traj(fig_traj,ax_traj,m,m.v_from_q(q_table),100,1000,"",operator) #m.v_from_q(q_table)
+	plot_traj(fig_traj,ax_traj,m,v_table0,100,1000,"V-value hyperbolic discount 0",operator) #m.v_from_q(q_table)
 
-	plot_v_value(fig_V1,ax_V1,m,v_table1,"")
+	plot_v_value(fig_V1,ax_V1,m,v_table1,"V-value hyperbolic discount 10")
 	#plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
 	#ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
-	plot_traj(fig_traj1,ax_traj1,m,v_table1,100,1000,"",operator)
+	plot_traj(fig_traj1,ax_traj1,m,v_table1,100,1000,"V-value hyperbolic discount 10",operator)
 	
 	
 	

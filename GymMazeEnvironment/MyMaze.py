@@ -344,7 +344,8 @@ class MyMaze():
                 reward = self.reward_table[tuple(state)+(a,)]
 
             elif reward_type=="env":
-                if (new_state==self.env.observation_space.high).all():
+
+                if tuple(new_state)==tuple(self.env.observation_space.high):
                     reward = 1
                 else:
                     reward = -1/(self.maze_size*self.maze_size)
@@ -1058,6 +1059,8 @@ class MyMaze():
         err=2
         threshold = 1e-8
 
+        start = time.time()
+
         while err > threshold:
 
             
@@ -1110,6 +1113,7 @@ class MyMaze():
 
         #end = self.env.observation_space.high
         #v_vector[tuple(end)] = 1
+        print("duration ",time.time()-start)
         print("Myopic discount done")
         return v_vector
 
@@ -1264,6 +1268,9 @@ class MyMaze():
     def local_uncertainty(self,uncertain_state,radius):
 
 
+        # uncertain_state = tuple(np.random.randint(0,self.maze_size,size=2))
+        # radius = np.random.randint(0,6)
+
         v_vector = np.zeros((self.maze_size,self.maze_size),dtype=float)
         end = self.env.observation_space.high
         #v_vector[tuple(end)] = 10
@@ -1355,13 +1362,13 @@ class MyMaze():
 
         start = time.time()
 
-        beta = np.ones((self.maze_size,self.maze_size))
+        beta = beta_max*np.ones((self.maze_size,self.maze_size))
         p=0.2
 
         for i in range(self.maze_size):
             for j in range(self.maze_size):
                 if np.random.rand() < p:
-                    beta[i,j] = 0.1
+                    beta[i,j] = beta_min
 
 
         while err > threshold:

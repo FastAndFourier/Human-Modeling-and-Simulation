@@ -66,28 +66,36 @@ def evaluate_v(maze,v_vector,nb_traj,max_step,operator,optimal_traj):
 	dtw_list = []
 	frechet_list = []
 
+	mean_step_per_tile = []
+
 	for epoch in tqdm(range(nb_traj)):
-	    maze.env.reset()
-	    state = [0,0]
-	    traj_map[tuple(state)]+=1
-	    traj = []
-	    traj.append(list(state))
-	    length = 0
+
+		epoch_traj_map = np.zeros((maze.maze_size,maze.maze_size),dtype=int)
+		maze.env.reset()
+		state = [0,0]
+		traj_map[tuple(state)]+=1
+		epoch_traj_map[tuple(state)]+=1
+		traj = []
+		traj.append(list(state))
+		length = 0
 	    
-	    while (maze.env.state!=maze.env.observation_space.high).any() and length < max_step:
-	        action = maze.select_action_from_v(state,v_vector,"human",operator)[0]
-	        new_s,reward,done,_ = maze.env.step(int(action))
-	        state = new_s
-	        traj.append(list(state))
-	        traj_map[tuple(state)]+=1
-	        length+=1
+		while (maze.env.state!=maze.env.observation_space.high).any() and length < max_step:
+			action = maze.select_action_from_v(state,v_vector,"human",operator)[0]
+			new_s,reward,done,_ = maze.env.step(int(action))
+			state = new_s
+			traj.append(list(state))
+			traj_map[tuple(state)]+=1
+			epoch_traj_map[tuple(state)]+=1
+			length+=1
 
-	    dtw_list.append(distanceDTW(traj,optimal_traj))
-	    frechet_list.append(distanceFrechet(traj,optimal_traj))
-	    length_list.append(length)
+		dtw_list.append(distanceDTW(traj,optimal_traj))
+		frechet_list.append(distanceFrechet(traj,optimal_traj))
+		length_list.append(length)
+		mean_step_per_tile.append((epoch_traj_map[epoch_traj_map!=0]).mean())
 
-	# print(dtw_list)
-	# print(length_list)
+
+	print(mean_step_per_tile)
+	print(np.array(mean_step_per_tile).mean())
 	return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), traj_map
 
 
@@ -141,12 +149,23 @@ while (m_obstacle.env.state!=m_obstacle.env.observation_space.high).any():
 
 v_boltz01 = m.boltz_rational(0.1)
 v_boltz10 = m.boltz_rational(10)
+
 v_prospect_bias2 = m_obstacle.prospect_bias(2)
 v_prospect_bias10 = m_obstacle.prospect_bias(50)
+
 v_extremal0 = m.extremal(0)
-# v_extremal05 = m.extremal(0.5)
 v_extremal09 = m.extremal(0.99)
+
 v_random_boltz = m.random_boltz_rational(50,0)
+
+v_myopic01 = m.myopic_discount(0.1)
+v_myopic099 = m.myopic_discount(0.99)
+
+v_myopicVI5 = m.myopic_value_iteration(5)
+v_myopicVI50 = m.myopic_value_iteration(50)
+
+v_hyperdisc0 = m.hyperbolic_discount(0)
+v_hyperdisc10 = m.hyperbolic_discount(10)
 
 operator = "softmax"
 
@@ -154,25 +173,44 @@ res = []
 
 print("Measures optimal")
 res.append(evaluate_v(m,v_table_optimal,100,200,operator,optimal_traj))
+
 print("Measures boltzmann 0")
 res.append(evaluate_v(m,v_boltz01,100,200,operator,optimal_traj))
 print("Measures boltzmann 10")
 res.append(evaluate_v(m,v_boltz10,100,200,operator,optimal_traj))
+
 print("Measures prospect_bias 1")
 res.append(evaluate_v(m_obstacle,v_prospect_bias2 ,100,200,operator,optimal_traj_obstacle))
 print("Measures prospect_bias 10")
 res.append(evaluate_v(m_obstacle,v_prospect_bias10,100,200,operator,optimal_traj_obstacle))
+
 print("Measures extremal0")
 res.append(evaluate_v(m,v_extremal0,100,200,operator,optimal_traj))
 # print("Measures extremal05")
 # res.append(evaluate_v(m,v_extremal05,100,200,operator,optimal_traj))
 print("Measures extremal09")
 res.append(evaluate_v(m,v_extremal09,100,200,operator,optimal_traj))
+
 print("Measures random boltz")
 res.append(evaluate_v(m,v_random_boltz,100,200,operator,optimal_traj))
 
+print("Measures myopic discount 0.1")
+res.append(evaluate_v(m,v_myopic01,100,200,operator,optimal_traj))
+print("Measures myopic discount 0.99")
+res.append(evaluate_v(m,v_myopic099,100,200,operator,optimal_traj))
 
-bias = ["optimal","boltz 0","boltz 10","prospect 2","prospect 50","extremal 0","extremal 0.99","random boltz"] #"extremal 0.5",
+print("Measures myopic VI 5")
+res.append(evaluate_v(m,v_myopicVI5,100,200,operator,optimal_traj))
+print("Measures myopic VI 50")
+res.append(evaluate_v(m,v_myopicVI50,100,200,operator,optimal_traj))
+
+print("Measures hyperbolic discount 0")
+res.append(evaluate_v(m,v_hyperdisc0,100,200,operator,optimal_traj))
+print("Measures hyperbolic discount 10")
+res.append(evaluate_v(m,v_hyperdisc10,100,200,operator,optimal_traj))
+
+
+
 
 mean_len = []
 std_len = []
@@ -187,23 +225,46 @@ for k in range(len(res)):
 
 data = {"mean len":mean_len,"std len":std_len,"mean dtw":mean_dtw,"mean frechet dist":mean_frechet}
 results = pd.DataFrame(data=data)
-results.index = ["Optimal","Boltzmann (0.1)","Boltzmann (10)","Prospect bias (2)","Prospect bias (50)","Extremal (0)","Extremal (0.99)","Random Boltz (0-50)"] #"Extremal (0.5)",
+results.index = ["Optimal","Boltzmann (0.1)","Boltzmann (10)","Prospect bias (2)","Prospect bias (50)","Extremal (0)",\
+				 "Extremal (0.99)","Random Boltz (0-50)","Myopic Discount (0.1)","Myopic Discount (0.99)","Myopic VI (5)",\
+				 "Myopic VI (50)","Hyperbolic Discount (0)","Hyperbolic Discount (10)"] #"Extremal (0.5)",
 
 print(results)
 
 
-for k in range(len(res)):
+bias_label = ["optimal","boltz 0","boltz 10","prospect 2","prospect 50","extremal 0","extremal 0.99","random boltz","myopic disc 0.1","myopic disc 0.99",\
+			  "myopic VI 5","myopic disc 50","hyper disc 0","hyper disc 10"] #"extremal 0.5",
+
+bias_index_display = [0,2,4,7,9,10,11,12]
+
+_, walls_list = m.edges_and_walls_list_extractor()
+
+
+res_display = list(np.array(res)[bias_index_display])
+bias_label_display = list(np.array(bias_label)[bias_index_display])
+
+for k in range(len(res_display)):
 	ax = plt.subplot(2,4,k+1)
-	ax.imshow(np.transpose(res[k][-1]))
-	plt.title(bias[k])
+	ax.imshow(np.transpose(res_display[k][-1]))
+	plt.title(bias_label_display[k])
 	ax.set_xlim(-1,m.maze_size)
 	ax.set_ylim(m.maze_size,-1)
 	ax.set_aspect('equal')
+
+	for i in walls_list:
+		ax.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
+
+	for i in range(0,m.maze_size):
+		ax.add_line(mlines.Line2D([-0.5,-0.5],[i-0.5,i+0.5],color='k'))
+		ax.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
+		ax.add_line(mlines.Line2D([m.maze_size-0.5,m.maze_size-0.5],[i-0.5,i+0.5],color='k'))
+		ax.add_line(mlines.Line2D([i-0.5,i+0.5],[m.maze_size-0.5,m.maze_size-0.5],color='k'))
+
 	#ax.colorbar()
 
 
-#plt.savefig('traj_measures.png')
-results.to_csv('bias_measures.csv')
+# #plt.savefig('traj_measures.png')
+# results.to_csv('bias_measures.csv')
 
 plt.show()
 
