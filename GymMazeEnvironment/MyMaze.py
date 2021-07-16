@@ -68,7 +68,7 @@ def plot_traj(fig,ax,maze,v_vector,nb_traj,max_step,title,operator):
         total_length.append(length)
 
     print("Mean length",int(np.array(total_length).mean()),"Standard deviation",int(np.array(total_length).std()))
-
+    print(total_length)
     ax.set_xlim(-1,maze.maze_size)
     ax.set_ylim(maze.maze_size,-1)
     ax.set_aspect('equal')
@@ -123,6 +123,21 @@ def plot_policy(fig,ax,maze,v_vector,title,operator):
 
     fig.suptitle(title)
 
+
+def compare_traj(traj_opti,traj,maze):
+
+    distance_traj = np.zeros((maze.maze_size,maze.maze_size))
+
+    for k in range(len(traj_opti)):
+
+        state_opti = tuple(traj_opti[k])
+        state = tuple(traj[k])
+
+        distance_traj[tuple(state_opti)] = abs(state_opti[0]-state[0]) + abs(state_opti[1]-state[1])
+
+    return np.transpose(distance_traj)
+
+
 class MyMaze():
 
     def __init__(self,env_name,lr=0.05,epsi=0.02,disc=0.99):
@@ -170,25 +185,6 @@ class MyMaze():
         return res
     
 
-    # def get_reward(self):
-
-    #     # Outputs an array with every possible reward (for every action) on every state
-
-    #     reward_tab = np.zeros((self.maze_size,self.maze_size,4))
-    #     state = self.env.reset()
-    #     state = tuple(state)
-
-    #     for i in range(self.maze_size):
-    #         for j in range(self.maze_size):
-
-    #             state = np.array([i,j])
-
-    #             for a in range(4):
-    #                 self.env.env.reset(state)
-    #                 new_s,r,_,_ = self.env.step(a)
-    #                 reward_tab[tuple(state)][a] = r
-
-    #     return reward_tab
 
 
 
@@ -265,6 +261,8 @@ class MyMaze():
 
         self.optimal_policy = optimal_policy
 
+
+
     def set_reward(self,obstacle=[]):
 
         reward_table = np.zeros((self.maze_size,self.maze_size,4))
@@ -285,7 +283,7 @@ class MyMaze():
                     o = [(k==list(state)).all() for k in obstacle]
                     #print(o)
                     if not(empty_obstacle) and (True in o):
-                        reward_table[state+(action,)] = -5
+                        reward_table[state+(action,)] = -2
                     elif action==optimal_action:
                         if new_state==end:
                             reward_table[state+(action,)] = 10
@@ -346,7 +344,7 @@ class MyMaze():
             elif reward_type=="env":
 
                 if tuple(new_state)==tuple(self.env.observation_space.high):
-                    reward = 1
+                    reward = 10
                 else:
                     reward = -1/(self.maze_size*self.maze_size)
 
@@ -368,7 +366,7 @@ class MyMaze():
         elif operator=="softmax":
             v_choice = np.array(v_choice)
             b = np.max(v_choice)
-            x = np.exp((v_choice-b)*2)/np.sum(np.exp((v_choice-b)*2))
+            x = np.exp((v_choice-b)*0.5)/np.sum(np.exp((v_choice-b)*0.5))
             action = np.random.choice([0,1,2,3],p=x)
 
         
@@ -388,8 +386,10 @@ class MyMaze():
         it=0
         action_ = []
         entropy = []
+        traj = []
+        traj.append(list(s))
 
-        self.env.render()
+        #self.env.render()
 
         while not(done):# and it<1000:
 
@@ -402,13 +402,14 @@ class MyMaze():
             action_.append(action)
             obv = new_s
             s = tuple(obv)
+            traj.append(list(s))
 
 
-            if RENDER:
-                self.env.render()
-                time.sleep(RENDER_TIME)
+            # if RENDER:
+            #     self.env.render()
+            #     time.sleep(RENDER_TIME)
                 
-        print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
+        #print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
 
         if RENDER:
             plt.figure()
@@ -418,7 +419,7 @@ class MyMaze():
         
         
 
-        return action_
+        return action_, traj
 
 
     def edges_and_walls_list_extractor(self):
@@ -908,7 +909,7 @@ class MyMaze():
         self.env.reset()
         self.env.render()
 
-        threshold = 1e-8
+        threshold = 1e-3
         err=2
 
         start = time.time()
@@ -967,7 +968,7 @@ class MyMaze():
                         err = max(err,abs(v-v_vector[tuple(state)]))
 
 
-            #print(err)
+            print(err)
 
         print("duration",time.time()-start)
         print("Prospect bias done")
@@ -1089,12 +1090,7 @@ class MyMaze():
                     for a in range(4):
 
                         y = 0
-                        # new_state = self.new_state_table[state+(a,)]
 
-                        # if a!=optimal_action:
-                        #     reward = -1
-                        # else:
-                        #     reward = 1
 
                         non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)
                         for k in non_zero_new_state:
