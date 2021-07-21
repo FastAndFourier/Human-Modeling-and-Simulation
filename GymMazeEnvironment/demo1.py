@@ -35,7 +35,11 @@ if __name__ == "__main__":
 	fig_traj1 = plt.figure()
 	ax_traj1 = fig_traj1.gca()
 
+	# fig_compar1 = plt.figure()
+	# ax_compar1 = fig_compar1.gca()
 
+	# fig_compar2 = plt.figure()
+	# ax_compar2 = fig_compar2.gca()
 
 
 	# fig_policy1 = plt.figure()
@@ -47,7 +51,8 @@ if __name__ == "__main__":
 
 
 	
-	m = MyMaze('maze-sample-20x20-v0')
+	m = MyMaze('maze-random-5x5-plus-v0')#MyMaze('maze-sample-20x20-v0')
+	
 
 
 	path = "./Q-Table/qtable1_20x20.npy"
@@ -66,48 +71,30 @@ if __name__ == "__main__":
 	obstacle = np.array([[3,6],[1,4]])
 	m_obstacle.set_reward(obstacle)
 
-	# h = m.get_entropy_map(q_table)
-
-	# fig_h = plt.figure()
-	# ax_h = fig_h.gca()
-	# ax_h.imshow(h)
 
 	plt.ion()
 	plt.pause(0.2)
 
 
-	# diff_myopic = []
-	# diff_hyper = []
-	# disc = [0.1,0.25,0.50,0.75,0.8,0.9,0.95,0.99]
-	# for d in disc:
-	# 	print(d)
-	# 	v_table0 = m.myopic_discount(d)
-	# 	v_table1 = m.hyperbolic_discount(d)
-	# 	diff_myopic.append(abs(v_table0[0,0]-v_table0[m.maze_size-1,m.maze_size-1]))
-	# 	diff_hyper.append(abs(v_table1[0,0]-v_table1[m.maze_size-1,m.maze_size-1]))
+	v_table0 = m.boltz_rational(50)
+	v_table1 = m.boltz_rational(100000)
+
+	operator = "softmax"
+
+	# traj_opti = m.generate_traj_v(m.v_from_q(q_table),operator)[1]
+	# traj0 = m_obstacle.generate_traj_v(v_table0,operator)[1]
+	# traj1 = m_obstacle.generate_traj_v(v_table1,operator)[1]
 
 
-	#m.local_uncertainty([1,1],3)#([10,m.maze_size-8],4)
-
-	v_table0 = m_obstacle.prospect_bias(0.8)
-	v_table1 = m_obstacle.prospect_bias(50)
-
-	operator = "argmax"
-
-	traj_opti = m.generate_traj_v(m.v_from_q(q_table),operator)[1]
-	traj0 = m.generate_traj_v(v_table0,operator)[1]
-	traj1 = m.generate_traj_v(v_table1,operator)[1]
-
-	print(compare_traj(traj_opti,traj1,m_obstacle))
 	
-	plot_v_value(fig_V,ax_V,m,v_table0,"V-value hyperbolic discount 0")
+	plot_v_value(fig_V,ax_V,m,v_table0,"")
 	#plot_policy(fig_policy,ax_policy,m,v_table0,"","argmax")
-	plot_traj(fig_traj,ax_traj,m,v_table0,5,1000,"V-value hyperbolic discount 0",operator) #m.v_from_q(q_table)
+	plot_traj(fig_traj,ax_traj,m,v_table0,5,1000,"Boltzmann beta=50",operator,50) #m.v_from_q(q_table)
 
-	plot_v_value(fig_V1,ax_V1,m,v_table1,"V-value hyperbolic discount 10")
+	plot_v_value(fig_V1,ax_V1,m,v_table1,"")
 	#plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
 	#ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
-	plot_traj(fig_traj1,ax_traj1,m,v_table1,5,1000,"V-value hyperbolic discount 10",operator)
+	plot_traj(fig_traj1,ax_traj1,m,v_table1,5,1000,"Boltzmann beta=100000",operator,100000)
 	
 	
 	

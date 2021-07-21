@@ -17,7 +17,8 @@ RENDER = 1
 SIMULATE = 0
 RENDER_TIME = 0.05
 
-REWARD_T = "human" #"env", "human"
+REWARD_T = "env" #"env", "human"
+DETERMINISTIC = False
 
 
 def plot_v_value(fig,ax,maze,v_vector,title):
@@ -48,7 +49,7 @@ def plot_v_value(fig,ax,maze,v_vector,title):
 
     fig.suptitle(title)
 
-def plot_traj(fig,ax,maze,v_vector,nb_traj,max_step,title,operator):
+def plot_traj(fig,ax,maze,v_vector,nb_traj,max_step,title,operator,beta):
 
     traj = np.zeros((maze.maze_size,maze.maze_size),dtype=int)
     total_length = []
@@ -60,7 +61,7 @@ def plot_traj(fig,ax,maze,v_vector,nb_traj,max_step,title,operator):
         length = 0
         
         while (maze.env.state!=maze.env.observation_space.high).any() and length < max_step:
-            action = maze.select_action_from_v(state,v_vector,"human",operator)[0]
+            action = maze.select_action_from_v(state,v_vector,REWARD_T,operator,beta)[0]
             new_s,reward,done,_ = maze.env.step(int(action))
             state = new_s
             traj[tuple(state)]+=1
@@ -83,7 +84,7 @@ def plot_traj(fig,ax,maze,v_vector,nb_traj,max_step,title,operator):
 
 
 
-def plot_policy(fig,ax,maze,v_vector,title,operator):
+def plot_policy(fig,ax,maze,v_vector,title,operator,beta):
 
     _, walls_list = maze.edges_and_walls_list_extractor()
 
@@ -100,7 +101,7 @@ def plot_policy(fig,ax,maze,v_vector,title,operator):
             if ([i,j]==[maze.maze_size-1,maze.maze_size-1]):
                 break
 
-            action = maze.select_action_from_v([i,j],v_vector,"human",operator)[0]
+            action = maze.select_action_from_v([i,j],v_vector,REWARD_T,operator,beta)[0]
 
             if action==0:
                 ax.quiver(i,j,0,.05,color='c')#,width=0.01,headwidth=2,headlength=1)
@@ -186,9 +187,6 @@ class MyMaze():
     
 
 
-
-
-
     def get_new_state(self):
 
         # Outputs an array with every new state reached after executing action A from a state S
@@ -219,30 +217,47 @@ class MyMaze():
 
         transition_tab = np.zeros((self.maze_size*self.maze_size,self.maze_size*self.maze_size,4),dtype=tuple)
 
-        #Deterministic case
+        if DETERMINISTIC:
+            #Deterministic case
 
-        dic_action = ["N","S","E","W"]
-        for i in range(self.maze_size):
-            for j in range(self.maze_size):
+            dic_action = ["N","S","E","W"]
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
 
-                state = self.env.env.reset(np.array([i,j]))
-                state = tuple(state)
+                    state = self.env.env.reset(np.array([i,j]))
+                    state = tuple(state)
 
-                for a in range(4):
-                    new_state = self.new_state_table[tuple(state)+(a,)]
-                    lin_state = state[0]*self.maze_size+state[1]
-                    #print(state,lin_state)
-                    lin_new_state = new_state[0]*self.maze_size+new_state[1]
-                    #print(state,"--",dic_action[a],"->",new_state)
+                    for a in range(4):
+                        new_state = self.new_state_table[tuple(state)+(a,)]
+                        lin_state = state[0]*self.maze_size+state[1]
+                        #print(state,lin_state)
+                        lin_new_state = new_state[0]*self.maze_size+new_state[1]
+                        #print(state,"--",dic_action[a],"->",new_state)
 
-                    if tuple(new_state)==state:
-                        transition_tab[lin_state,lin_state,a] = 1
-                        
-                    else:
-                        transition_tab[lin_state,lin_new_state,a] = 1
-                #print("\n")
+                        if tuple(new_state)==state:
+                            transition_tab[lin_state,lin_state,a] = 1
+                            
+                        else:
+                            transition_tab[lin_state,lin_new_state,a] = 1
+                    #print("\n")
+        else:
 
-        return transition_tab
+            for i in range(self.maze_size):
+                for j in range(self.maze_size):
+
+                    for a in range(4):
+
+                        for e in range(100):
+                            state = self.env.env.reset(np.array([i,j]))
+                            state = tuple(state)
+                            new_state,reward,done,_ = self.env.step(a)
+                            lin_state = state[0]*self.maze_size+state[1]
+                            lin_new_state = new_state[0]*self.maze_size+new_state[1]
+                            transition_tab[lin_state,lin_state,a]+=1
+
+
+
+        return transition_tab/100
 
                  
 
@@ -317,7 +332,7 @@ class MyMaze():
         return entropy_map
 
 
-    def select_action_from_v(self,state,v,reward_type,operator):
+    def select_action_from_v(self,state,v,reward_type,operator,beta):
 
         # Selects action following a policy given a Value-function v
 
@@ -366,7 +381,7 @@ class MyMaze():
         elif operator=="softmax":
             v_choice = np.array(v_choice)
             b = np.max(v_choice)
-            x = np.exp((v_choice-b)*0.5)/np.sum(np.exp((v_choice-b)*0.5))
+            x = np.exp((v_choice-b)*beta)/np.sum(np.exp((v_choice-b)*beta))
             action = np.random.choice([0,1,2,3],p=x)
 
         
@@ -374,7 +389,7 @@ class MyMaze():
         return action,h
 
 
-    def generate_traj_v(self,v,operator):
+    def generate_traj_v(self,v,operator,beta):
 
         # Generates trajectory following a policy derived from value function v
         # If RENDER=True, the trajectory is displayed on the GymMaze graphical environment
@@ -394,7 +409,7 @@ class MyMaze():
         while not(done):# and it<1000:
 
 
-            action, h = self.select_action_from_v(s,v,REWARD_T,operator)
+            action, h = self.select_action_from_v(s,v,REWARD_T,operator,beta)
             entropy.append(h)
             new_s,reward,done,_ = self.env.step(int(action))
 
@@ -411,10 +426,10 @@ class MyMaze():
                 
         #print("Start ",self.env.reset(),"->",it,"iterations",self.action2str(action_))
 
-        if RENDER:
-            plt.figure()
-            plt.plot(entropy)
-            plt.show()
+        # if RENDER:
+        #     plt.figure()
+        #     plt.plot(entropy)
+        #     plt.show()
 
         
         
@@ -663,15 +678,13 @@ class MyMaze():
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                # if a == optimal_action:
-                                #     if new_state==tuple(end):
-                                #         reward = 10
-                                #     else:
-                                #         reward = 1
-                                # else:
-                                #     reward = -1
-
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])
 
@@ -743,7 +756,15 @@ class MyMaze():
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                reward = self.reward_table[state+(a,)]
+                                # reward = self.reward_table[state+(a,)]
+
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])
 
