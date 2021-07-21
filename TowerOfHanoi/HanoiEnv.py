@@ -5,6 +5,13 @@ import pygame
 
 MAX_EPISODE = 5000
 
+WIDTH6 = 240
+WIDTH5 = 200
+WIDTH4 = 160
+WIDTH3 = 120
+WIDTH2 = 80
+WIDTH1 = 40
+
 def action2lin(a):
   if a==[0,1]:
     return 0
@@ -33,11 +40,12 @@ class HanoiEnv():
     self.lr = lr
     self.action_space = [[0,1],[0,2],[1,0],[1,2],[2,0],[2,1]]
     self.final_state = tuple([0]*self.nb_disk)
-    self.MAX_STEP = self.nb_disk*((2**self.nb_disk-1)-1)
+    self.MAX_STEP = self.nb_disk*((2**self.nb_disk-1))
     
     pygame.init()
-    self.win = pygame.display.set_mode()
+    self.win = pygame.display.set_mode((600,300))
     pygame.display.set_caption("Tower of Hanoi")
+    self.render()
 
 
   def sub2lin(self,v):
@@ -179,4 +187,39 @@ class HanoiEnv():
     return  q_table
 
 
-    def render(self):
+  def render(self):
+
+    self.win.fill((255,255,255))
+
+    pygame.draw.rect(self.win,(128,128,128),(100,100,10,300)) #left pole
+    pygame.draw.rect(self.win,(128,128,128),(300,100,10,300)) #middle pole
+    pygame.draw.rect(self.win,(128,128,128),(500,100,10,300)) #right pole
+
+
+
+    width = [WIDTH1,WIDTH2,WIDTH3,WIDTH4,WIDTH5,WIDTH6][:self.nb_disk]
+    color = [(255,0,0),(0,255,0),(0,0,255),(255,0,255),(0,255,255),(255,255,0)][:self.nb_disk]
+
+    position_height = [0]*len(self.state)
+    state_reverse = list(self.state[::-1])
+
+    for i,s in enumerate(state_reverse[1:]):
+      if s in state_reverse[:i+1]:
+        index_under = min(state_reverse[:i+1][::-1].index(s) + i,self.nb_disk-1)
+        position_height[i+1] = position_height[index_under] + 1
+
+    position_height = position_height[::-1]
+
+
+    for s,w,c,p in zip(state_reverse,width[::-1],color[::-1],position_height[::-1]):
+      if s==0:
+        pygame.draw.rect(self.win,c,(100-w//2 + 5,280-p*20,w,20))
+      if s==1:
+        pygame.draw.rect(self.win,c,(300-w//2 + 5,280-p*20,w,20))
+      if s==2:
+        pygame.draw.rect(self.win,c,(500-w//2 + 5,280-p*20,w,20))
+
+
+
+    pygame.display.update()
+
