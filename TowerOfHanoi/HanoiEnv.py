@@ -1,6 +1,7 @@
 import numpy as np
 from Graph import HanoiGraph
 import random
+import pygame
 
 MAX_EPISODE = 5000
 
@@ -33,6 +34,11 @@ class HanoiEnv():
     self.action_space = [[0,1],[0,2],[1,0],[1,2],[2,0],[2,1]]
     self.final_state = tuple([0]*self.nb_disk)
     self.MAX_STEP = self.nb_disk*((2**self.nb_disk-1)-1)
+    
+    pygame.init()
+    self.win = pygame.display.set_mode()
+    pygame.display.set_caption("Tower of Hanoi")
+
 
   def sub2lin(self,v):
     res = 0
@@ -171,3 +177,6 @@ class HanoiEnv():
         
 
     return  q_table
+
+
+    def render(self):
