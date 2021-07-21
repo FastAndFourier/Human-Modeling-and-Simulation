@@ -2,25 +2,42 @@ import numpy as np
 from MyMaze import *
 import pandas as pd
 
-# def DTW(traj1,traj2):
+def distance_dijkstra(env,start,end,connection):
 
-# 	print(len(traj1),len(traj2))
-# 	time.sleep(0.1)
-# 	if len(traj1)==0 and len(traj2)==0:
-# 		print("In")
-# 		return 0
-# 	elif len(traj1)==0 or len(traj2)==0:
-# 		return 1000
-# 	else:
+	size_maze = env.observation_space.high[0] + 1
+	
+	source = [0,0]
+	source = source[0]*size_maze + source[1]
+	
 
-# 		head1 = traj1[0]
-# 		head2 = traj2[0]
+	dist = np.inf*np.ones(len(vertex))
+	prev = np.zeros(len(vertex))
+	visited = [False]*len(vertex)#np.copy(vertex)
+	dist[source] = 0
 
-# 		rest1 = traj1[1:]
-# 		rest2 = traj2[1:]
- 
-# 		return np.sqrt((head1[0]-head2[0])**2+(head1[1]-head2[1])**2) + min(DTW(traj1,rest2),DTW(rest1,traj2),DTW(rest1,rest2))
 
+
+	while (visited!=[True]*len(vertex)):
+
+		min = size_maze**2
+		for v in range(len(vertex)):
+			if dist[v] < min and visited[v] == False:
+				min = dist[v]
+				u = v
+
+		visited[u] = True
+
+		for v in connection[tuple([u//size_maze,u%size_maze])]:
+			lin_v = v[0]*size_maze+v[1]
+			if visited[lin_v]==False and (dist[u] + 1 < dist[lin_v]) :
+				dist[lin_v] = dist[u] + 1
+				prev[lin_v] = u
+
+			if (v==end).all():
+				return dist[lin_v]
+
+		
+	return -1
 
 def levenshteinDistance(traj1,traj2):
 
