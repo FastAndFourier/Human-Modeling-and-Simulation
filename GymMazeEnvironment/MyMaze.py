@@ -13,12 +13,12 @@ MAX_EPISODE = 10000
 MAX_STEP = 500
 # DISCOUNT = 1
 MIN_STREAK = MAX_EPISODE
-RENDER = 1
+RENDER = 0
 SIMULATE = 0
 RENDER_TIME = 0.05
 
 REWARD_T = "env" #"env", "human"
-DETERMINISTIC = False
+DETERMINISTIC = True
 
 
 def plot_v_value(fig,ax,maze,v_vector,title):
@@ -144,12 +144,13 @@ class MyMaze():
     def __init__(self,env_name,lr=0.05,epsi=0.02,disc=0.99):
 
         self.env = gym.make(env_name)
-        #print(self.env)
         self.env.render()
 
         self.maze_size = self.env.observation_space.high[0] + 1
         self.epsilon = epsi
         self.discount = disc
+        self.lr = lr
+
 
         self.optimal_policy = []
         self.reward_table = [] 
@@ -220,6 +221,7 @@ class MyMaze():
         if DETERMINISTIC:
             #Deterministic case
 
+
             dic_action = ["N","S","E","W"]
             for i in range(self.maze_size):
                 for j in range(self.maze_size):
@@ -235,8 +237,7 @@ class MyMaze():
                         #print(state,"--",dic_action[a],"->",new_state)
 
                         if tuple(new_state)==state:
-                            transition_tab[lin_state,lin_state,a] = 1
-                            
+                            transition_tab[lin_state,lin_state,a] = 1  
                         else:
                             transition_tab[lin_state,lin_new_state,a] = 1
                     #print("\n")
@@ -255,9 +256,10 @@ class MyMaze():
                             lin_new_state = new_state[0]*self.maze_size+new_state[1]
                             transition_tab[lin_state,lin_state,a]+=1
 
+            transition_tab = transition_tab/100
 
 
-        return transition_tab/100
+        return transition_tab
 
                  
 
@@ -359,7 +361,7 @@ class MyMaze():
             elif reward_type=="env":
 
                 if tuple(new_state)==tuple(self.env.observation_space.high):
-                    reward = 10
+                    reward = 1
                 else:
                     reward = -1/(self.maze_size*self.maze_size)
 
@@ -652,7 +654,6 @@ class MyMaze():
                     
 
                     if state == tuple(end):
-                        #v_vector[state] = 10
                         break
 
                     else:
@@ -661,11 +662,6 @@ class MyMaze():
                         optimal_action = self.optimal_policy[state]
 
                         for a in range(4):
-
-                            # reward = self.reward_table[state+(a,)]
-                            # new_state = self.new_state_table[state+(a,)]
-                            # y = reward+self.discount*v_vector[new_state]
-
 
                             y = 0
 
@@ -688,16 +684,16 @@ class MyMaze():
 
                                 y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])
 
+                                
 
                             x.append(y)
 
-                        # if state ==tuple([self.maze_size-2,self.maze_size-1]):
-                        #     print(x)
 
                         v_vector[state] = np.max(np.array(x))
+                        
+
                         err = max(err,abs(v-v_vector[tuple(state)]))
-            #print("\n")
-            #print(err)
+            print(err)
 
         
         print("duration",(time.time()-start))
@@ -724,6 +720,7 @@ class MyMaze():
         start = time.time()
 
         while err > threshold:
+
             v_temp = np.copy(v_vector)
             err = 0
 
@@ -745,18 +742,12 @@ class MyMaze():
 
                             y = 0
 
-                            # if a == optimal_action:
-                            #     reward = 1
-                            # else:
-                            #     reward = -1
 
                             non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)[0]
 
                             for k in non_zero_new_state:
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
-
-                                # reward = self.reward_table[state+(a,)]
 
                                 if REWARD_T=="env":
                                     if new_state == tuple(end):
@@ -779,7 +770,7 @@ class MyMaze():
         
                         err = max(err,abs(v-v_vector[tuple(state)]))
 
-            #print(err)
+            print(err)
 
 
         print("duration",(time.time()-start))
@@ -788,7 +779,7 @@ class MyMaze():
         return v_vector
 
 
-    def illusion_of_control(self,n):
+    def illusion_of_control(self,n,beta):
 
 
         v_vector = np.zeros((self.maze_size,self.maze_size))
@@ -823,25 +814,29 @@ class MyMaze():
 
                             y = 0
 
-                            # if a == optimal_action:
-                            #     reward = 1
-                            # else:
-                            #     reward = -1
-
                             non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)[0]
                             
                             for k in non_zero_new_state:
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 y+=((self.transition_table[lin_state,k,a])**n)*(reward+self.discount*v_temp[new_state])
 
 
                             x.append(y)
 
-                        v_vector[state] = np.max(np.array(x))
+                        x = np.array(x)
+                        b = np.max(x)
+                        v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                         err = max(err,abs(v-v_vector[tuple(state)]))
 
 
@@ -852,7 +847,7 @@ class MyMaze():
         return v_vector
 
 
-    def optimism_pessimism(self,omega):
+    def optimism_pessimism(self,omega,beta):
 
 
         v_vector = np.zeros((self.maze_size,self.maze_size))
@@ -888,10 +883,6 @@ class MyMaze():
 
                             y = 0
 
-                            # if a == optimal_action:
-                            #     reward = 1
-                            # else:
-                            #     reward = -1
 
                             non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)[0]
                             
@@ -899,7 +890,13 @@ class MyMaze():
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 modified_transition_matrix = self.transition_table[lin_state,k,a]*np.exp(omega*(reward+self.discount*v_temp[state]))
 
@@ -908,7 +905,10 @@ class MyMaze():
 
                             x.append(y)
 
-                        v_vector[state] = np.max(np.array(x))
+                        x = np.array(x)
+                        b = np.max(x)
+                        v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                         err = max(err,abs(v-v_vector[tuple(state)]))
 
 
@@ -921,7 +921,7 @@ class MyMaze():
 
     ####################### PROSPECT BIAS (loss aversion + scope insensitivity) ############################
 
-    def prospect_bias(self,c):
+    def prospect_bias(self,c,beta):
         #v_vector = np.random.rand(env.size[1]*env.size[0])
         v_vector = np.zeros((self.maze_size,self.maze_size))
         end = self.env.observation_space.high
@@ -969,7 +969,13 @@ class MyMaze():
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
 
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 if reward>0:
                                     reward = np.log(1+reward)
@@ -983,7 +989,9 @@ class MyMaze():
 
                             x.append(y)
 
-                        v_vector[state] = np.max(x)#reward + self.discount*v_temp[tuple(new_state)]
+                        x = np.array(x,dtype=float)
+                        b = np.max(x)
+                        v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
 
 
                         err = max(err,abs(v-v_vector[tuple(state)]))
@@ -997,7 +1005,7 @@ class MyMaze():
 
 
 
-    def extremal(self,alpha):
+    def extremal(self,alpha,beta):
 
         # Regular Value iteration
 
@@ -1007,7 +1015,7 @@ class MyMaze():
         #v_vector[tuple(end)] = 5
 
         self.env.reset()
-        threshold = 1e-8
+        threshold = 1e-3
         err = 2
         start = time.time()
 
@@ -1034,10 +1042,6 @@ class MyMaze():
 
                             y = 0
 
-                            # if a == optimal_action:
-                            #     reward = 1
-                            # else:
-                            #     reward = -1
 
                             non_zero_new_state = np.where(self.transition_table[lin_state,:,a]!=0)[0]
                             
@@ -1045,9 +1049,15 @@ class MyMaze():
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
-                                #print((1-alpha)*reward+alpha*v_temp[new_state],reward)
+  
                                 expected_reward = max(reward,(1-alpha)*reward+alpha*v_temp[new_state])
 
                                 y+=self.transition_table[lin_state,k,a]*expected_reward
@@ -1055,11 +1065,15 @@ class MyMaze():
 
                             x.append(y)
 
-                        v_vector[state] = np.max(np.array(x))
+                        x = np.array(x)
+                        b = np.max(x)
+                        v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                         err = max(err,abs(v-v_vector[tuple(state)]))
 
 
-        
+            print(err)
+
         print("duration",(time.time()-start))
         print("Extremal done")
 
@@ -1068,7 +1082,7 @@ class MyMaze():
 
     ######################### MYOPIC DISCOUNT ##########################################################
 
-    def myopic_discount(self,disc):
+    def myopic_discount(self,disc,beta):
 
 
         #v_vector = np.random.rand(self.maze_size,self.maze_size)
@@ -1079,7 +1093,7 @@ class MyMaze():
         self.env.reset()
 
         err=2
-        threshold = 1e-8
+        threshold = 1e-5
 
         start = time.time()
 
@@ -1118,15 +1132,25 @@ class MyMaze():
 
                             new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                            reward = self.reward_table[state+(a,)]
+                            if REWARD_T=="env":
+                                if new_state == tuple(end):
+                                    reward = 1
+                                else:
+                                    reward = -1/(self.maze_size**2)
+                            else:
+                                reward = self.reward_table[state+(a,)]
 
                             y+=self.transition_table[lin_state,k,a]*(reward+disc*v_temp[new_state])
                         
                         x.append(y)
 
  
-                    v_vector[state] = np.max(x)
+                    x = np.array(x,dtype=float)
+                    b = np.max(x)
+                    v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                     err = max(err,abs(v-v_vector[tuple(state)]))
+            print(err)
 
         #end = self.env.observation_space.high
         #v_vector[tuple(end)] = 1
@@ -1138,7 +1162,7 @@ class MyMaze():
     
 ######################### MYOPIC VALUE ITERATION ##########################################################
 
-    def myopic_value_iteration(self,h):
+    def myopic_value_iteration(self,h,beta):
 
 
         v_vector = np.zeros((self.maze_size,self.maze_size),dtype=float)
@@ -1188,14 +1212,23 @@ class MyMaze():
 
                             new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                            reward = self.reward_table[state+(a,)]
+                            if REWARD_T=="env":
+                                if new_state == tuple(end):
+                                    reward = 1
+                                else:
+                                    reward = -1/(self.maze_size**2)
+                            else:
+                                reward = self.reward_table[state+(a,)]
 
                             y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])
                         
                         x.append(y)
 
  
-                    v_vector[state] = np.max(x)
+                    x = np.array(x,dtype=float)
+                    b = np.max(x)
+                    v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                     err = max(err,abs(v-v_vector[tuple(state)]))
                     
             it+=1
@@ -1208,7 +1241,7 @@ class MyMaze():
 
 ######################### MYOPIC VALUE ITERATION ##########################################################
 
-    def hyperbolic_discount(self,k_):
+    def hyperbolic_discount(self,k_,beta):
 
 
         v_vector = np.zeros((self.maze_size,self.maze_size),dtype=float)
@@ -1263,14 +1296,23 @@ class MyMaze():
 
                             new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                            reward = self.reward_table[state+(a,)]
+                            if REWARD_T=="env":
+                                if new_state == tuple(end):
+                                    reward = 1
+                                else:
+                                    reward = -1/(self.maze_size**2)
+                            else:
+                                reward = self.reward_table[state+(a,)]
 
                             y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])/(1+k_*v_temp[new_state])
                         
                         x.append(y)
 
  
-                    v_vector[state] = np.max(x)
+                    x = np.array(x,dtype=float)
+                    b = np.max(x)
+                    v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                     err = max(err,abs(v-v_vector[tuple(state)]))
 
 
@@ -1282,7 +1324,7 @@ class MyMaze():
 
 ####################### LOCAL UNCERTAINTY ################################################################
 
-    def local_uncertainty(self,uncertain_state,radius):
+    def local_uncertainty(self,uncertain_state,radius,beta):
 
 
         # uncertain_state = tuple(np.random.randint(0,self.maze_size,size=2))
@@ -1355,7 +1397,10 @@ class MyMaze():
                         x.append(y)
 
  
-                    v_vector[state] = np.max(x)
+                    x = np.array(x,dtype=float)
+                    b = np.max(x)
+                    v_vector[tuple(state)] = np.sum(x*np.exp(beta*(x-b)))/(np.sum(np.exp(beta*(x-b))))
+
                     err = max(err,abs(v-v_vector[tuple(state)]))
 
             #print(err)
@@ -1421,7 +1466,13 @@ class MyMaze():
 
                                 new_state = tuple([k//self.maze_size,k%self.maze_size])
 
-                                reward = self.reward_table[state+(a,)]
+                                if REWARD_T=="env":
+                                    if new_state == tuple(end):
+                                        reward = 1
+                                    else:
+                                        reward = -1/(self.maze_size**2)
+                                else:
+                                    reward = self.reward_table[state+(a,)]
 
                                 y+=self.transition_table[lin_state,k,a]*(reward+self.discount*v_temp[new_state])
 

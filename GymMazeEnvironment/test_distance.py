@@ -1,6 +1,7 @@
 import numpy as np
 from MyMaze import *
 import pandas as pd
+from tqdm import tqdm
 
 def distance_dijkstra(env,start,end,connection):
 
@@ -10,17 +11,17 @@ def distance_dijkstra(env,start,end,connection):
 	source = source[0]*size_maze + source[1]
 	
 
-	dist = np.inf*np.ones(len(vertex))
-	prev = np.zeros(len(vertex))
-	visited = [False]*len(vertex)#np.copy(vertex)
+	dist = np.inf*np.ones(size_maze**2)
+	prev = np.zeros(size_maze**2)
+	visited = [False]*size_maze**2#np.copy(vertex)
 	dist[source] = 0
 
 
 
-	while (visited!=[True]*len(vertex)):
+	while (visited!=[True]*size_maze**2):
 
 		min = size_maze**2
-		for v in range(len(vertex)):
+		for v in range(size_maze**2):
 			if dist[v] < min and visited[v] == False:
 				min = dist[v]
 				u = v
@@ -54,17 +55,22 @@ def levenshteinDistance(traj1,traj2):
 		return 1 + min(levenshteinDistance(traj1,traj2[1:]),levenshteinDistance(traj1[1:],traj2),levenshteinDistance(traj1[1:],traj2[1:]))
 
 
-def distanceDTW(traj1,traj2):
+def distanceDTW(env,traj1,traj2,connection):
 
 	matrice_distance = np.zeros((len(traj1),len(traj2)))
 	matrice_DTW = np.zeros((len(traj1),len(traj2)))
 
+	print(len(traj1),len(traj2))
+
 	for i in range(len(traj1)):
 		for j in range(len(traj2)):
 
-			matrice_distance[i,j] = np.sqrt((traj1[i][0]-traj2[j][0])**2 + (traj1[i][1]-traj2[j][1])**2)
+			matrice_distance[i,j] = distance_dijkstra(env,traj1[i],traj2[j],connection)#np.sqrt((traj1[i][0]-traj2[j][0])**2 + (traj1[i][1]-traj2[j][1])**2)
+			#traj_map2[tuple(state)]+=1
+
 
 	matrice_DTW[0,0] = matrice_distance[0,0]
+	print("Distance matrix for DTW computed")
 
 	for m in range(1,len(traj1)):
 		matrice_DTW[m,0] =matrice_distance[m,0] + matrice_DTW[m-1,0]
@@ -129,8 +135,38 @@ q_table = np.load(open(path,'rb'))
 maze.set_optimal_policy(q_table)
 maze.set_reward()
 
+
+
+vertex = []
+for i in range(maze.maze_size):
+	for j in range(maze.maze_size):
+		vertex.append([i,j])
+
+connection = {}
+for v in vertex:
+	c = []
+	for a in range(4):
+		maze.env.env.reset(np.array(v))
+		new_state,_,_,_ = maze.env.step(a)
+		if (new_state!=v).any():
+			c.append(new_state)
+
+	connection[tuple(v)] = c
+
+
+
+
+
 v1 = maze.v_from_q(q_table)
-v2 = maze.boltz_rational(0.1)
+v2 = maze.boltz_rational(10000)
+
+fig_V = plt.figure()
+ax_V = fig_V.gca()
+
+plot_v_value(fig_V,ax_V,maze,v2,"")
+
+plt.ioff()
+plt.show()
 
 distance_list_frechet = []
 distance_list_DTW = []
@@ -141,6 +177,7 @@ traj_map2 = np.zeros((maze.maze_size,maze.maze_size))
 
 for epoch in range(100):
 
+
 	traj1 = []
 	
 
@@ -150,7 +187,7 @@ for epoch in range(100):
 	while (state!=maze.env.observation_space.high).any():
 
 		traj1.append(list(state))
-		action = maze.select_action_from_v(state,v1,"human","softmax")[0]
+		action = maze.select_action_from_v(state,v1,"env","argmax",0)[0]
 		new_s,reward,done,_ = maze.env.step(int(action))
 		state = new_s
 		traj_map1[tuple(state)]+=1
@@ -166,13 +203,15 @@ for epoch in range(100):
 	while (state!=maze.env.observation_space.high).any():
 
 		traj2.append(list(state))
-		action = maze.select_action_from_v(state,v2,"human","softmax")[0]
+		action = maze.select_action_from_v(state,v2,"env","softmax",10)[0]
 		new_s,reward,done,_ = maze.env.step(int(action))
 		state = new_s
 		traj_map2[tuple(state)]+=1
 
 	distance_list_frechet.append(distanceFrechet(traj1,traj2))
-	distance_list_DTW.append(distanceDTW(traj1,traj2))
+	print("Frechet computed")
+	distance_list_DTW.append(distanceDTW(maze.env,traj1,traj2,connection))
+	print("DTW computed")
 
 	min_len = min(len(traj1),len(traj2))
 	traj = [traj1,traj2]
