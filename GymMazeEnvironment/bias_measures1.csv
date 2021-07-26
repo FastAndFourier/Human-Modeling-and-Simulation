@@ -1,0 +1,15 @@
+,mean len,std len,mean dtw,mean frechet dist
+Optimal,44,0,0,0.0
+Boltzmann (0.1),200,0,188,8.0
+Boltzmann (10),44,0,0,0.0
+Prospect bias (2),44,0,0,0.0
+Prospect bias (50),56,0,265,21.0
+Extremal (0),44,0,0,0.0
+Extremal (0.99),44,0,0,0.0
+Random Boltz (0-50),58,0,49,5.0
+Myopic Discount (0.1),44,0,0,0.0
+Myopic Discount (0.99),54,0,5,1.0
+Myopic VI (5),56,0,6,1.0
+Myopic VI (50),66,0,11,1.0
+Hyperbolic Discount (0),50,0,3,1.0
+Hyperbolic Discount (10),44,0,0,0.0

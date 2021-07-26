@@ -51,13 +51,13 @@ if __name__ == "__main__":
 
 
 	
-	m = MyMaze('maze-random-5x5-plus-v0')#MyMaze('maze-sample-20x20-v0')
+	m = MyMaze('maze-sample-20x20-v0',reward="human")
 	
 
 
 	path = "./Q-Table/qtable1_20x20.npy"
-	#q_table = m.q_learning()
-	#np.save(path,q_table)
+	# q_table = m.q_learning()
+	# np.save(path,q_table)
 	q_table = np.load(open(path,'rb'))
 	m.set_optimal_policy(q_table)
 
@@ -66,18 +66,28 @@ if __name__ == "__main__":
 	m.set_reward(obstacle)
 	
 
-	m_obstacle = MyMaze('maze-sample-20x20-v0')
+	m_obstacle = MyMaze('maze-sample-20x20-v0',reward="human")
 	m_obstacle.set_optimal_policy(q_table)
 	obstacle = np.array([[3,6],[1,4]])
 	m_obstacle.set_reward(obstacle)
 
 
 	plt.ion()
-	plt.pause(0.2)
+
+	beta1 = 1
+	beta2 = 1
+
+	v_table0 = m.extremal(0,beta1)
 
 
-	v_table0 = m.boltz_rational(50)
-	v_table1 = m.boltz_rational(100000)
+	# h_map = plt.figure()
+	# h_map_ax = h_map.gca()
+	# entropy = m.get_entropy_map_q(q_table)
+	# im_h = h_map_ax.imshow(np.transpose(np.exp(entropy)))
+	# h_map.colorbar(im_h)
+	# print(entropy)
+
+	v_table1 = m.extremal(0.99,beta1)
 
 	operator = "softmax"
 
@@ -89,12 +99,12 @@ if __name__ == "__main__":
 	
 	plot_v_value(fig_V,ax_V,m,v_table0,"")
 	#plot_policy(fig_policy,ax_policy,m,v_table0,"","argmax")
-	plot_traj(fig_traj,ax_traj,m,v_table0,5,1000,"Boltzmann beta=50",operator,50) #m.v_from_q(q_table)
+	plot_traj(fig_traj,ax_traj,m,v_table0,1,1000,"Extremal alpha 0 beta = "+str(beta1),operator,beta1) #m.v_from_q(q_table)
 
 	plot_v_value(fig_V1,ax_V1,m,v_table1,"")
 	#plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
 	#ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
-	plot_traj(fig_traj1,ax_traj1,m,v_table1,5,1000,"Boltzmann beta=100000",operator,100000)
+	plot_traj(fig_traj1,ax_traj1,m,v_table1,1,1000,"Extremal alpha 1 beta = "+str(beta2),operator,beta2)
 	
 	
 	
