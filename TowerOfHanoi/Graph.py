@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import time
 
 def hamming(s1,s2):
   distance = 0
@@ -30,6 +31,23 @@ class HanoiGraph():
     self.graph = self.build_hanoi_graph()
 
 
+  def sub2lin(self,v):
+    res = 0
+    for k in range(self.nb_disk):
+      res+= v[k]*np.power(3,k)
+    return res
+
+  def lin2sub(self,i):
+
+    res = [i//3**(self.nb_disk-1)]
+    temp = i%3**(self.nb_disk-1)
+    for k in range(self.nb_disk-2,0,-1):
+      res.append(temp//3**k)
+      temp = i%3**k
+    res.append(i%3)
+
+    return res
+
   def set_edge(self):
 
     edge = []
@@ -46,7 +64,7 @@ class HanoiGraph():
             e.append(v1)
                       
           # Cdt: the disk must be unstackable AND stackable
-          elif v[index] not in v[:index] and v1[index] not in v1[:index]: 
+          elif (v[index] not in v[:index]) and (v1[index] not in v1[:index]): 
             e.append(v1)
 
         else:
@@ -85,5 +103,40 @@ class HanoiGraph():
           print("|",end="\t")
 
       print("\n")
+
+
+  def distance_state(self,start,end):
+
+    if tuple(start)==tuple(end):
+      return 0
+
+    nb_state = len(self.vertex)
+
+    source = self.sub2lin(start)
+    stop = self.sub2lin(end) 
+
+    dist = np.inf*np.ones(nb_state)
+    prev = np.zeros(nb_state)
+    visited = np.array([False]*nb_state)
+    index_visited = np.arange(nb_state)
+    dist[source] = 0
+
+    while index_visited.size!=0:
+
+      u = index_visited[dist[index_visited]==np.min(dist[index_visited])][0]
+
+      visited[u] == False
+      index_visited = np.delete(index_visited,np.where(index_visited==u))
+
+      for v in self.graph[tuple(self.lin2sub(u))]:
+        lin_v = self.sub2lin(v)
+        if lin_v in index_visited and (dist[u] + 1 < dist[lin_v]) :
+          dist[lin_v] = dist[u] + 1
+          prev[lin_v] = u
+
+        if lin_v==stop:
+          return dist[lin_v]
+      
+    return -1
 
     
