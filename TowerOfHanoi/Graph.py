@@ -26,7 +26,12 @@ class HanoiGraph():
   def __init__(self,n):
 
     self.nb_disk = n
-    self.vertex = list(itertools.product([0,1,2],repeat=self.nb_disk))
+    
+    combination = list(itertools.product([0,1,2],repeat=self.nb_disk))
+    self.vertex = []
+    for c in combination:
+      self.vertex.append(c[::-1])
+
     self.edge = self.set_edge()
     self.graph = self.build_hanoi_graph()
 
@@ -105,38 +110,38 @@ class HanoiGraph():
       print("\n")
 
 
-  def distance_state(self,start,end):
+  # def distance_state(self,start,end):
 
-    if tuple(start)==tuple(end):
-      return 0
+  #   if tuple(start)==tuple(end):
+  #     return 0
 
-    nb_state = len(self.vertex)
+  #   nb_state = len(self.vertex)
 
-    source = self.sub2lin(start)
-    stop = self.sub2lin(end) 
+  #   source = self.sub2lin(start)
+  #   stop = self.sub2lin(end) 
 
-    dist = np.inf*np.ones(nb_state)
-    prev = np.zeros(nb_state)
-    visited = np.array([False]*nb_state)
-    index_visited = np.arange(nb_state)
-    dist[source] = 0
+  #   dist = np.inf*np.ones(nb_state)
+  #   prev = np.zeros(nb_state)
+  #   visited = np.array([False]*nb_state)
+  #   index_visited = np.arange(nb_state)
+  #   dist[source] = 0
 
-    while index_visited.size!=0:
+  #   while index_visited.size!=0:
 
-      u = index_visited[dist[index_visited]==np.min(dist[index_visited])][0]
+  #     u = index_visited[dist[index_visited]==np.min(dist[index_visited])][0]
 
-      visited[u] == False
-      index_visited = np.delete(index_visited,np.where(index_visited==u))
+  #     visited[u] == False
+  #     index_visited = np.delete(index_visited,np.where(index_visited==u))
 
-      for v in self.graph[tuple(self.lin2sub(u))]:
-        lin_v = self.sub2lin(v)
-        if lin_v in index_visited and (dist[u] + 1 < dist[lin_v]) :
-          dist[lin_v] = dist[u] + 1
-          prev[lin_v] = u
+  #     for v in self.graph[tuple(self.lin2sub(u))]:
+  #       lin_v = self.sub2lin(v)
+  #       if lin_v in index_visited and (dist[u] + 1 < dist[lin_v]) :
+  #         dist[lin_v] = dist[u] + 1
+  #         prev[lin_v] = u
 
-        if lin_v==stop:
-          return dist[lin_v]
+  #       if lin_v==stop:
+  #         return dist[lin_v]
       
-    return -1
+  #   return -1
 
     
