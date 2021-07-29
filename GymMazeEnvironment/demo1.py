@@ -52,19 +52,17 @@ if __name__ == "__main__":
 
 	
 	m = MyMaze('maze-sample-20x20-v0',reward="human")
+	path = "./Q-Table/qtable1_20x20.npy"
+
+	
 	
 
-
-	path = "./Q-Table/qtable1_20x20.npy"
-	# q_table = m.q_learning()
-	# np.save(path,q_table)
+	#q_table = m.q_learning()
+	#np.save(path,q_table)
 	q_table = np.load(open(path,'rb'))
 	m.set_optimal_policy(q_table)
-
-	obstacle = []#np.array([[0,3],[1,0],[15,17]])
-
+	obstacle = [] #np.array([[0,3],[1,0],[15,17]])
 	m.set_reward(obstacle)
-	
 
 	m_obstacle = MyMaze('maze-sample-20x20-v0',reward="human")
 	m_obstacle.set_optimal_policy(q_table)
@@ -74,10 +72,10 @@ if __name__ == "__main__":
 
 	plt.ion()
 
-	beta1 = 1
-	beta2 = 1
+	beta1 = 2
+	beta2 = 2
 
-	v_table0 = m.extremal(0,beta1)
+	v_table0 = m.myopic_value_iteration(20,beta1)
 
 
 	# h_map = plt.figure()
@@ -87,7 +85,7 @@ if __name__ == "__main__":
 	# h_map.colorbar(im_h)
 	# print(entropy)
 
-	v_table1 = m.extremal(0.99,beta1)
+	v_table1 = m.myopic_value_iteration(200,beta2)
 
 	operator = "softmax"
 
@@ -97,14 +95,14 @@ if __name__ == "__main__":
 
 
 	
-	plot_v_value(fig_V,ax_V,m,v_table0,"")
+	m.plot_v_value(fig_V,ax_V,v_table0,"")
 	#plot_policy(fig_policy,ax_policy,m,v_table0,"","argmax")
-	plot_traj(fig_traj,ax_traj,m,v_table0,1,1000,"Extremal alpha 0 beta = "+str(beta1),operator,beta1) #m.v_from_q(q_table)
+	m.plot_traj(fig_traj,ax_traj,v_table0,1,1000,"Extremal alpha 0 beta = "+str(beta1),operator,beta1) #m.v_from_q(q_table)
 
-	plot_v_value(fig_V1,ax_V1,m,v_table1,"")
+	m.plot_v_value(fig_V1,ax_V1,v_table1,"")
 	#plot_policy(fig_policy1,ax_policy1,m,v_table1,"",operator)
 	#ax_policy.scatter(10,m.maze_size-8, marker="o", s=100,c="g")
-	plot_traj(fig_traj1,ax_traj1,m,v_table1,1,1000,"Extremal alpha 1 beta = "+str(beta2),operator,beta2)
+	m.plot_traj(fig_traj1,ax_traj1,v_table1,1,1000,"Extremal alpha 1 beta = "+str(beta2),operator,beta2)
 	
 	
 	

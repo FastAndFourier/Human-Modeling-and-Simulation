@@ -15,7 +15,7 @@ class Metrics():
 
 	########### CORE EVALUATION FUNCTION ################################
 
-	def evaluate(self,v_vector,operator):
+	def evaluate(self,v_vector,operator,beta):
 
 		traj_map = np.zeros((self.maze.maze_size,self.maze.maze_size),dtype=int)
 		length_list = []
@@ -27,7 +27,8 @@ class Metrics():
 
 
 
-		for epoch in tqdm(range(self.nb_traj)):
+		#for epoch in tqdm(range(self.nb_traj)):
+		for epoch in range(self.nb_traj):
 
 			epoch_traj_map = np.zeros((self.maze.maze_size,self.maze.maze_size),dtype=int)
 			self.maze.env.reset()
@@ -39,7 +40,8 @@ class Metrics():
 			length = 0
 		    
 			while (self.maze.env.state!=self.maze.env.observation_space.high).any() and length < self.max_step:
-				action = self.maze.select_action_from_v(state,v_vector,self.maze.reward_type,operator,self.beta_actor)[0]
+
+				action = self.maze.select_action_from_v(state,v_vector,self.maze.reward_type,operator,beta)[0]
 				new_s,reward,done,_ = self.maze.env.step(int(action))
 				state = new_s
 				traj.append(list(state))
@@ -56,8 +58,8 @@ class Metrics():
 			mean_step_per_tile.append((epoch_traj_map[epoch_traj_map!=0]).mean())
 
 
-		print(mean_step_per_tile)
-		print(np.array(mean_step_per_tile).mean())
+		print("Step per tile",mean_step_per_tile)
+		print("Mean step per tile",np.array(mean_step_per_tile).mean())
 		return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), np.transpose(traj_map)
 
 
@@ -113,36 +115,35 @@ class Metrics():
 		size_maze = self.maze.maze_size
 
 		source = start[0]*size_maze + start[1]
-		
+		stop = end[0]*size_maze + end[1]
 
 		dist = np.inf*np.ones(size_maze**2)
 		prev = np.zeros(size_maze**2)
-		visited = [False]*size_maze**2#np.copy(vertex)
+		index_visited = np.arange(size_maze**2)
 		dist[source] = 0
 
 
 
-		while (visited!=[True]*size_maze**2):
+		while index_visited.size!=0:
 
-			min_ = size_maze**2
-			for v in range(size_maze**2):
-				if dist[v] < min_ and visited[v] == False:
-					min_ = dist[v]
-					u = v
+			u = index_visited[dist[index_visited]==np.min(dist[index_visited])][0]
 
-			visited[u] = True
+			index_visited = np.delete(index_visited,np.where(index_visited==u))
 
 			for v in self.graph[tuple([u//size_maze,u%size_maze])]:
-				lin_v = v[0]*size_maze+v[1]
-				if visited[lin_v]==False and (dist[u] + 1 < dist[lin_v]) :
-					dist[lin_v] = dist[u] + 1
-					prev[lin_v] = u
+				lin_v = v[0]*size_maze + v[1]
+				if lin_v in index_visited and (dist[u] + 1 < dist[lin_v]) :
+			  		dist[lin_v] = dist[u] + 1
+			  		prev[lin_v] = u
 
-				if (v==end).all():
-					return dist[lin_v]
+				if lin_v==stop:
+					return int(dist[lin_v])
+	      
 
 			
 		return -1
+
+
 
 	def distance_matrix_dijstra(self,traj1,traj2):
 
