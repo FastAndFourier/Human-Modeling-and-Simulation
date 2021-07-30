@@ -63,6 +63,18 @@ class Metrics():
 		return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), np.transpose(traj_map)
 
 
+	def compare_traj(self,traj):
+
+	    distance_traj = np.zeros((self.maze.maze_size,self.maze.maze_size))
+
+	    for k in range(len(traj)):
+
+	        state_opti = tuple(traj_opti[k])
+	        state = tuple(traj[k])
+
+	        distance_traj[tuple(state_opti)] = abs(state_opti[0]-state[0]) + abs(state_opti[1]-state[1])
+
+	    return np.transpose(distance_traj)
 
 	############# HELPER FUNCTIONS ######################################
 
