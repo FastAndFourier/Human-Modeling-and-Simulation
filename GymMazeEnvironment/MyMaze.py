@@ -342,7 +342,7 @@ class MyMaze():
 
 
 
-    def get_entropy_map_v(self,v_table):
+    def get_entropy_map_v(self,v_table,beta):
 
 
         entropy_map = np.zeros((self.maze_size,self.maze_size),dtype=float)
@@ -375,7 +375,7 @@ class MyMaze():
 
                 x = np.array(x,dtype=float)
                 b = np.max(x)
-                p = np.exp((x-b)*2)/np.sum(np.exp((x-b)*2))
+                p = np.exp((x-b)*beta)/np.sum(np.exp((x-b)*beta))
                 entropy_map[i,j] = -np.sum(p*np.log(p))
 
         return entropy_map
@@ -461,19 +461,20 @@ class MyMaze():
 
             v_choice.append(reward + self.discount*v[tuple(new_state)])
 
-
-
-        p = np.exp(v_choice)/np.sum(np.exp(v_choice))
-        #print(p,v_choice)
-        h = -np.sum(p*np.log(p))
+       
+        
 
         if operator=="argmax":
             action = np.argmax(v_choice)
+            x = np.exp(v_choice)/np.sum(np.exp(v_choice))
+            h = -np.sum(x*np.log(x))
 
         elif operator=="softmax":
+
             v_choice = np.array(v_choice)
             b = np.max(v_choice)
             x = np.exp((v_choice-b)*beta)/np.sum(np.exp((v_choice-b)*beta))
+            h = -np.sum(x*np.log(x))
             action = np.random.choice([0,1,2,3],p=x)
 
         
