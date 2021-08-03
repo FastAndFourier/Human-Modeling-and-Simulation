@@ -3,7 +3,9 @@ from matplotlib import colors
 from colorsys import hsv_to_rgb
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib import cm
 import numpy as np
+#from math import ceil
 
 class Metrics():
 
@@ -181,7 +183,7 @@ class Metrics():
 
 	############### TRAJ COMPARAISON ###############################################
 
-	def compare_traj_map(self,maze1,optimal_traj,v_bias,beta,nb_demo,show):
+	def compare_traj_map(self,maze1,optimal_traj,v_bias,beta,nb_demo,title):
 	
 
 		# Trajectory map optimal demonstration
@@ -244,6 +246,7 @@ class Metrics():
 		sorted_it = np.sort(diff_map[diff_map<0])
 
 		boundaries = []
+		label = []
 
 		if sorted_it.size > 0:
 			bound = [sorted_it[len(sorted_it)*k//3] for k in range(3)]
@@ -251,8 +254,14 @@ class Metrics():
 			color.append((0,0,1))
 			color.append((0,0.4,1))
 			color.append((0.5,0.7,1))	
+
+			label = ["<"+str(int(abs(boundaries[0])))+" steps", \
+				 "<"+str(int(abs(boundaries[1])))+" steps", \
+				 "<"+str(int(abs(boundaries[2])))+" steps"]
 		
 		boundaries.extend([0,2,2.1,3])
+		label.extend(["Tiles in common","Only optimal tiles"])
+
 		
 		color.append((1,1,1)) # White : normal tiles
 		color.append((0,1,0)) # Green : common tiles
@@ -261,13 +270,11 @@ class Metrics():
 		cmap = colors.LinearSegmentedColormap.from_list('my_cmap',color,N=len(color))
 		norm = colors.BoundaryNorm(boundaries,cmap.N,clip=True)
 		im = ax.imshow(diff_map,cmap=cmap,norm=norm)
-		#fig.colorbar(im)
-
-		label = ["<"+str(int(abs(boundaries[0])))+" steps","<"+str(int(abs(boundaries[1])))+" steps","<"+str(int(abs(boundaries[2])))+" steps", \
-				 "Tiles in common","Only optimal tiles"]
+		
 
 		color_label = color
 		color_label.remove((1,1,1))
+
 
 		patches = [mpatches.Patch(color=color_label[i],label=label[i]) for i in range(len(label))]
 		fig.legend(handles=patches)
@@ -283,6 +290,55 @@ class Metrics():
 			ax.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
 			ax.add_line(mlines.Line2D([maze1.maze_size-0.5,maze1.maze_size-0.5],[i-0.5,i+0.5],color='k'))
 			ax.add_line(mlines.Line2D([i-0.5,i+0.5],[maze1.maze_size-0.5,maze1.maze_size-0.5],color='k'))
+
+		fig.suptitle("Trust map for optimal and biased trajectories ("+str(nb_demo)+" demonstrations): "+title)
+
+
+	def display_entropy(self,v_bias,beta,nb_demo,title):
+
+		entropy_traj = np.zeros((self.maze.maze_size,self.maze.maze_size))
+
+		for e in range(nb_demo):
+			state = self.maze.env.env.reset(np.array([0,0]))
+			done = False
+
+			while not(done):
+
+				action,h = self.maze.select_action_from_v(state,v_bias,self.maze.reward_type,"softmax",beta) 
+				entropy_traj[tuple(state)] += h
+				new_state, reward, done, _ = self.maze.env.step(int(action))
+				state = new_state
+
+
+		entropy_traj = entropy_traj/nb_demo
+		viridis = cm.get_cmap('viridis',1024)
+		newcolor = viridis(np.linspace(0,1,1024))
+		newcolor[:1,:] = np.array([1,1,1,1])
+
+		cmap = colors.ListedColormap(newcolor)
+
+
+		entropy_traj = np.transpose(entropy_traj)
+
+		fig = plt.figure()
+		ax = fig.gca()
+
+		im = ax.imshow(entropy_traj,cmap=cmap)
+		fig.colorbar(im)
+
+		_, walls_list = self.maze.edges_and_walls_list_extractor()
+
+		for i in walls_list:
+			ax.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
+
+		for i in range(0,self.maze.maze_size):
+			ax.add_line(mlines.Line2D([-0.5,-0.5],[i-0.5,i+0.5],color='k'))
+			ax.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
+			ax.add_line(mlines.Line2D([self.maze.maze_size-0.5,self.maze.maze_size-0.5],[i-0.5,i+0.5],color='k'))
+			ax.add_line(mlines.Line2D([i-0.5,i+0.5],[self.maze.maze_size-0.5,self.maze.maze_size-0.5],color='k'))
+
+		fig.show()
+		fig.suptitle("Entropy on biased trajectories ("+str(nb_demo)+" demonstrations): "+title)
 
 
 

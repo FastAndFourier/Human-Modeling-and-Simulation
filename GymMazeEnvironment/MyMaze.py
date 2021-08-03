@@ -1343,7 +1343,7 @@ class MyMaze():
 
                     err = max(err,abs(v-v_vector[tuple(state)]))
 
-            print(err)
+            #print(err)
 
         print("duration",(time.time()-start))
         print("Hyperbolic discount done")

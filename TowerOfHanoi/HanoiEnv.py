@@ -142,7 +142,7 @@ class HanoiEnv():
         state = self.reset(list(v))
 
         if action[0] not in list(self.state): # No disk around the giving peg
-          new_state = self.state
+          new_state = tuple(self.state)
           reward = -1
           done = False
         else:
@@ -167,7 +167,7 @@ class HanoiEnv():
 
 
         reward_table[self.sub2lin(v),action2lin(action)] = reward
-        new_state_table[self.sub2lin(v),action2lin(action)] = new_state
+        new_state_table[self.sub2lin(v),action2lin(action)] = tuple(new_state)
 
 
     return reward_table, new_state_table
@@ -264,7 +264,7 @@ class HanoiEnv():
     return action
 
 
-  def select_action_v(self,state,v):
+  def select_action_v(self,state,v,operator,beta):
 
     x = []
     lin_state = self.sub2lin(state)
@@ -284,9 +284,16 @@ class HanoiEnv():
         else:
           reward = -1
 
+
       x.append(reward + self.discount*v[self.sub2lin(new_state)])
 
-    return np.argmax(np.array(x))
+    if operator == "softmax":
+      x = np.array(x)
+      b = np.max(x) 
+      p = np.exp(beta*(x-b))/np.sum(np.exp(beta*(x-b)))
+      return np.random.choice(list(range(6)),p=p)
+    else:
+      return np.argmax(np.array(x))
 
 
   ########### Q-LEARNING AGENT ##########################
@@ -363,7 +370,7 @@ class HanoiEnv():
 
     return traj
 
-  def demonstration_from_v(self,start,v_vector,beta):
+  def demonstration_from_v(self,start,v_vector,operator,beta):
 
     state = self.reset(start)
     done = False
@@ -373,7 +380,7 @@ class HanoiEnv():
 
     while not(done) and it < MAX_STEP:
 
-      action = self.select_action_v(state,v_vector)
+      action = self.select_action_v(state,v_vector,operator,beta)
       new_state, reward, done = self.step(int(action))
       state = new_state
       traj.append(state)
@@ -418,6 +425,11 @@ class HanoiEnv():
           return int(dist[lin_v])
       
     return -1
+
+
+  # def occurence_on_state(self,traj):
+
+    
 
 
   ############## IRATIONAL BIASES ######################
