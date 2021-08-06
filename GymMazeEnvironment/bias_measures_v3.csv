@@ -1,0 +1,241 @@
+,Bias,length,DTW,Frechet
+0,boltz 1,106,94.0,6.0
+1,boltz 1,80,51.0,5.0
+2,boltz 1,89,26.0,2.0
+3,boltz 1,84,44.0,4.0
+4,boltz 1,92,27.0,2.0
+5,boltz 1,81,39.0,5.0
+6,boltz 1,106,89.0,5.0
+7,boltz 1,98,23.0,2.0
+8,boltz 1,76,44.0,5.0
+9,boltz 1,116,134.0,6.0
+10,boltz 1,115,46.0,2.0
+11,boltz 1,110,76.0,5.0
+12,boltz 1,113,42.0,3.0
+13,boltz 1,112,34.0,2.0
+14,boltz 1,84,23.0,2.0
+15,boltz 1,94,27.0,2.0
+16,boltz 1,126,68.0,2.0
+17,boltz 1,126,67.0,4.0
+18,boltz 1,97,28.0,2.0
+19,boltz 1,107,40.0,2.0
+20,boltz 10,48,2.0,1.0
+21,boltz 10,44,0.0,0.0
+22,boltz 10,46,1.0,1.0
+23,boltz 10,46,1.0,1.0
+24,boltz 10,46,1.0,1.0
+25,boltz 10,48,2.0,1.0
+26,boltz 10,44,0.0,0.0
+27,boltz 10,46,1.0,1.0
+28,boltz 10,44,0.0,0.0
+29,boltz 10,50,3.0,1.0
+30,boltz 10,46,1.0,1.0
+31,boltz 10,44,0.0,0.0
+32,boltz 10,48,2.0,1.0
+33,boltz 10,44,0.0,0.0
+34,boltz 10,46,1.0,1.0
+35,boltz 10,46,1.0,1.0
+36,boltz 10,46,1.0,1.0
+37,boltz 10,48,2.0,1.0
+38,boltz 10,46,1.0,1.0
+39,boltz 10,44,0.0,0.0
+40,prospect 2,63,32.0,6.0
+41,prospect 2,64,33.0,6.0
+42,prospect 2,55,32.0,6.0
+43,prospect 2,54,34.0,6.0
+44,prospect 2,62,43.0,6.0
+45,prospect 2,76,42.0,6.0
+46,prospect 2,67,41.0,6.0
+47,prospect 2,51,27.0,6.0
+48,prospect 2,61,33.0,6.0
+49,prospect 2,52,34.0,6.0
+50,prospect 2,57,33.0,6.0
+51,prospect 2,61,33.0,6.0
+52,prospect 2,66,53.0,6.0
+53,prospect 2,49,30.0,6.0
+54,prospect 2,64,40.0,6.0
+55,prospect 2,60,34.0,6.0
+56,prospect 2,64,48.0,6.0
+57,prospect 2,69,36.0,6.0
+58,prospect 2,51,27.0,6.0
+59,prospect 2,57,32.0,6.0
+60,prospect 50,91,427.0,21.0
+61,prospect 50,193,560.0,21.0
+62,prospect 50,118,464.0,21.0
+63,prospect 50,62,334.0,21.0
+64,prospect 50,150,417.0,21.0
+65,prospect 50,112,389.0,21.0
+66,prospect 50,81,380.0,21.0
+67,prospect 50,92,363.0,21.0
+68,prospect 50,138,394.0,21.0
+69,prospect 50,111,369.0,21.0
+70,prospect 50,110,420.0,21.0
+71,prospect 50,129,388.0,21.0
+72,prospect 50,86,47.0,6.0
+73,prospect 50,109,61.0,6.0
+74,prospect 50,98,351.0,21.0
+75,prospect 50,78,377.0,21.0
+76,prospect 50,126,483.0,21.0
+77,prospect 50,149,457.0,21.0
+78,prospect 50,106,467.0,21.0
+79,prospect 50,109,414.0,21.0
+80,extremal 0,47,1.0,1.0
+81,extremal 0,45,0.0,0.0
+82,extremal 0,51,2.0,1.0
+83,extremal 0,46,1.0,1.0
+84,extremal 0,48,2.0,1.0
+85,extremal 0,46,0.0,0.0
+86,extremal 0,46,0.0,0.0
+87,extremal 0,44,0.0,0.0
+88,extremal 0,54,15.0,4.0
+89,extremal 0,50,1.0,1.0
+90,extremal 0,44,0.0,0.0
+91,extremal 0,47,0.0,0.0
+92,extremal 0,49,1.0,1.0
+93,extremal 0,47,1.0,1.0
+94,extremal 0,46,1.0,1.0
+95,extremal 0,47,0.0,0.0
+96,extremal 0,47,1.0,1.0
+97,extremal 0,51,3.0,1.0
+98,extremal 0,45,0.0,0.0
+99,extremal 0,50,3.0,1.0
+100,extremal 0.99,49,2.0,1.0
+101,extremal 0.99,46,1.0,1.0
+102,extremal 0.99,46,1.0,1.0
+103,extremal 0.99,49,2.0,1.0
+104,extremal 0.99,46,1.0,1.0
+105,extremal 0.99,46,0.0,0.0
+106,extremal 0.99,44,0.0,0.0
+107,extremal 0.99,46,1.0,1.0
+108,extremal 0.99,46,1.0,1.0
+109,extremal 0.99,49,2.0,1.0
+110,extremal 0.99,44,0.0,0.0
+111,extremal 0.99,45,4.0,2.0
+112,extremal 0.99,44,0.0,0.0
+113,extremal 0.99,46,1.0,1.0
+114,extremal 0.99,48,3.0,1.0
+115,extremal 0.99,44,0.0,0.0
+116,extremal 0.99,44,0.0,0.0
+117,extremal 0.99,46,1.0,1.0
+118,extremal 0.99,48,4.0,1.0
+119,extremal 0.99,44,0.0,0.0
+120,myopic disc 0.1,48,2.0,1.0
+121,myopic disc 0.1,50,2.0,1.0
+122,myopic disc 0.1,48,2.0,1.0
+123,myopic disc 0.1,60,10.0,1.0
+124,myopic disc 0.1,50,2.0,1.0
+125,myopic disc 0.1,46,1.0,1.0
+126,myopic disc 0.1,48,1.0,1.0
+127,myopic disc 0.1,49,3.0,1.0
+128,myopic disc 0.1,49,2.0,1.0
+129,myopic disc 0.1,44,0.0,0.0
+130,myopic disc 0.1,49,2.0,1.0
+131,myopic disc 0.1,48,1.0,1.0
+132,myopic disc 0.1,51,2.0,1.0
+133,myopic disc 0.1,50,3.0,1.0
+134,myopic disc 0.1,46,1.0,1.0
+135,myopic disc 0.1,46,1.0,1.0
+136,myopic disc 0.1,52,4.0,1.0
+137,myopic disc 0.1,48,0.0,0.0
+138,myopic disc 0.1,51,2.0,1.0
+139,myopic disc 0.1,45,19.0,5.0
+140,myopic disc 0.99,85,33.0,4.0
+141,myopic disc 0.99,80,24.0,3.0
+142,myopic disc 0.99,63,9.0,1.0
+143,myopic disc 0.99,60,14.0,2.0
+144,myopic disc 0.99,80,20.0,2.0
+145,myopic disc 0.99,106,39.0,2.0
+146,myopic disc 0.99,77,15.0,1.0
+147,myopic disc 0.99,79,27.0,2.0
+148,myopic disc 0.99,72,22.0,2.0
+149,myopic disc 0.99,102,38.0,3.0
+150,myopic disc 0.99,80,24.0,2.0
+151,myopic disc 0.99,87,26.0,2.0
+152,myopic disc 0.99,85,33.0,2.0
+153,myopic disc 0.99,63,25.0,4.0
+154,myopic disc 0.99,59,7.0,1.0
+155,myopic disc 0.99,95,31.0,3.0
+156,myopic disc 0.99,87,22.0,2.0
+157,myopic disc 0.99,89,37.0,3.0
+158,myopic disc 0.99,63,38.0,5.0
+159,myopic disc 0.99,83,29.0,2.0
+160,myopic VI 5,66,10.0,1.0
+161,myopic VI 5,63,23.0,3.0
+162,myopic VI 5,69,13.0,1.0
+163,myopic VI 5,67,20.0,3.0
+164,myopic VI 5,50,3.0,1.0
+165,myopic VI 5,55,5.0,1.0
+166,myopic VI 5,73,21.0,2.0
+167,myopic VI 5,99,37.0,2.0
+168,myopic VI 5,48,1.0,1.0
+169,myopic VI 5,47,1.0,1.0
+170,myopic VI 5,52,2.0,1.0
+171,myopic VI 5,64,12.0,2.0
+172,myopic VI 5,54,5.0,1.0
+173,myopic VI 5,55,23.0,5.0
+174,myopic VI 5,56,6.0,1.0
+175,myopic VI 5,54,6.0,1.0
+176,myopic VI 5,58,8.0,1.0
+177,myopic VI 5,99,56.0,3.0
+178,myopic VI 5,83,20.0,1.0
+179,myopic VI 5,46,1.0,1.0
+180,myopic VI 200,73,16.0,2.0
+181,myopic VI 200,65,18.0,2.0
+182,myopic VI 200,108,80.0,5.0
+183,myopic VI 200,81,21.0,2.0
+184,myopic VI 200,94,33.0,2.0
+185,myopic VI 200,74,19.0,2.0
+186,myopic VI 200,73,23.0,3.0
+187,myopic VI 200,79,19.0,2.0
+188,myopic VI 200,57,5.0,1.0
+189,myopic VI 200,70,16.0,2.0
+190,myopic VI 200,98,46.0,2.0
+191,myopic VI 200,80,21.0,2.0
+192,myopic VI 200,78,33.0,3.0
+193,myopic VI 200,86,30.0,2.0
+194,myopic VI 200,73,34.0,3.0
+195,myopic VI 200,57,6.0,1.0
+196,myopic VI 200,99,65.0,5.0
+197,myopic VI 200,66,15.0,2.0
+198,myopic VI 200,67,12.0,1.0
+199,myopic VI 200,73,21.0,2.0
+200,hyper disc 0,58,26.0,5.0
+201,hyper disc 0,92,28.0,2.0
+202,hyper disc 0,87,37.0,4.0
+203,hyper disc 0,78,20.0,2.0
+204,hyper disc 0,91,30.0,2.0
+205,hyper disc 0,73,20.0,2.0
+206,hyper disc 0,70,21.0,2.0
+207,hyper disc 0,86,25.0,2.0
+208,hyper disc 0,69,13.0,1.0
+209,hyper disc 0,92,28.0,2.0
+210,hyper disc 0,72,12.0,1.0
+211,hyper disc 0,76,22.0,2.0
+212,hyper disc 0,54,5.0,1.0
+213,hyper disc 0,62,8.0,1.0
+214,hyper disc 0,81,17.0,1.0
+215,hyper disc 0,58,9.0,2.0
+216,hyper disc 0,105,57.0,3.0
+217,hyper disc 0,66,16.0,2.0
+218,hyper disc 0,91,34.0,2.0
+219,hyper disc 0,86,37.0,3.0
+220,hyper disc 5,47,15.0,4.0
+221,hyper disc 5,44,0.0,0.0
+222,hyper disc 5,47,0.0,0.0
+223,hyper disc 5,44,0.0,0.0
+224,hyper disc 5,44,0.0,0.0
+225,hyper disc 5,44,2.0,1.0
+226,hyper disc 5,48,2.0,1.0
+227,hyper disc 5,45,4.0,2.0
+228,hyper disc 5,54,5.0,1.0
+229,hyper disc 5,46,0.0,0.0
+230,hyper disc 5,47,12.0,4.0
+231,hyper disc 5,56,4.0,1.0
+232,hyper disc 5,50,3.0,1.0
+233,hyper disc 5,47,4.0,1.0
+234,hyper disc 5,47,1.0,1.0
+235,hyper disc 5,46,1.0,1.0
+236,hyper disc 5,45,0.0,0.0
+237,hyper disc 5,44,0.0,0.0
+238,hyper disc 5,47,0.0,0.0
+239,hyper disc 5,48,2.0,1.0
