@@ -67,7 +67,8 @@ class Metrics():
 
 		print("Step per tile",mean_step_per_tile)
 		print("Mean step per tile",np.array(mean_step_per_tile).mean())
-		return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), np.transpose(traj_map)
+		#return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), np.transpose(traj_map)
+		return np.array(length_list), np.array(dtw_list), np.array(frechet_list), np.transpose(traj_map)
 
 
 	# def compare_traj(self,traj):
@@ -102,6 +103,27 @@ class Metrics():
 	                c.append(new_state)
 
 	        connection[tuple(v)] = c
+
+	    return connection
+
+	def get_graph_lin(self):
+
+	    vertex = []
+	    for i in range(self.maze.maze_size):
+	        for j in range(self.maze.maze_size):
+	            vertex.append(i*self.maze.maze_size+j)
+
+	    connection = {}
+	    for v in vertex:
+	        c = []
+	        for a in range(4):
+	            self.maze.env.env.reset(np.array([v//self.maze.maze_size,v%self.maze.maze_size]))
+	            new_state,_,_,_ = self.maze.env.step(a)
+	            lin_state = new_state[0]*self.maze.maze_size+new_state[1]
+	            if lin_state!=v:
+	                c.append(lin_state)
+
+	        connection[v] = c
 
 	    return connection
 
@@ -208,7 +230,7 @@ class Metrics():
 		traj_map = np.zeros((maze1.maze_size,maze1.maze_size))
 
 		for k in range(nb_demo):
-			traj = maze1.generate_traj_v(v_bias,"softmax",beta)[1]
+			traj = maze1.generate_traj_v(v_bias,"softmax",beta,self.max_step)[1]
 			for t in traj:
 				lin_t = t[0]*maze1.maze_size + t[1]			
 				total_lin_traj.append(lin_t)

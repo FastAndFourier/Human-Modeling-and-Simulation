@@ -482,7 +482,7 @@ class MyMaze():
         return action,h
 
 
-    def generate_traj_v(self,v,operator,beta):
+    def generate_traj_v(self,v,operator,beta,max_step):
 
         # Generates trajectory following a policy derived from value function v
         # If RENDER=True, the trajectory is displayed on the GymMaze graphical environment
@@ -499,7 +499,7 @@ class MyMaze():
 
         #self.env.render()
 
-        while not(done):# and it<1000:
+        while not(done) and it<max_step:
 
 
             action, h = self.select_action_from_v(s,v,self.reward_type,operator,beta)

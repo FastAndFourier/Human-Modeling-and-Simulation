@@ -1,0 +1,13 @@
+,Mean length,Std length,Mean DTW,Std DTW,Mean Frechet,Std Frechet
+boltz 1,101,18,49,26,3,2
+boltz 10,45,2,1,2,1,1
+prospect 2,59,7,31,11,5,2
+prospect 50,120,34,385,145,18,6
+extremal 0,47,2,2,6,1,1
+extremal 0.99,46,2,2,4,1,1
+myopic disc 0.1,47,2,4,8,1,2
+myopic disc 0.99,76,15,24,16,2,1
+myopic VI 5,62,14,11,12,2,1
+myopic VI 200,75,9,19,7,2,1
+hyper disc 0,76,11,22,13,2,1
+hyper disc 5,47,2,3,5,1,1
