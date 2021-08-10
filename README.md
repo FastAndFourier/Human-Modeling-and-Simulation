@@ -8,4 +8,5 @@ The goal of this internship is to implement different models of rational and irr
 + ToyEnvironment: First implementation of a Boltzmann-noisy-rationnal agent trained by Q-Learning on a simple homemade grid environment
 + GymMazeEnvironment : Boltzmann-noisy-rationnal and irrationnal biases on OpenAi's GymMaze environment (https://github.com/MattChanTK/gym-maze)
 
-
+![alt text](https://github.com/FastAndFourier/StageM1ISIR/blob/main/traj1_measure_v2.png?raw=true)
+![alt text](https://github.com/FastAndFourier/StageM1ISIR/blob/main/traj2_measure_v2.png?raw=true)
