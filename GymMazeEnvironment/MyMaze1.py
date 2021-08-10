@@ -19,7 +19,7 @@ DETERMINISTIC = True
 
 
 
-class MyMaze():
+class MyMaze1():
 
     def __init__(self,env_name,reward,lr=0.05,epsi=0.02,disc=0.99):
 
@@ -32,12 +32,12 @@ class MyMaze():
         self.discount = disc
         self.lr = lr
 
-        
-        self.optimal_policy = []
-        #self.optimal_policy = self.set_optimal_policy()
+        self.metric_graph = self.set_graph( )
+
         self.reward_table = [] 
         self.new_state_table = self.get_new_state()
         self.transition_table = self.get_transition_probalities()
+        self.optimal_policy = self.set_optimal_policy()
         
 
 
@@ -186,6 +186,17 @@ class MyMaze():
             j=state%self.maze_size
             text = ax.text(i,j, str(traj[i,j])[0:4],ha="center", va="center", color="black")
 
+        _, walls_list = self.edges_and_walls_list_extractor()
+
+        for i in walls_list:
+            ax.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
+
+        for i in range(0,self.maze_size):
+            ax.add_line(mlines.Line2D([-0.5,-0.5],[i-0.5,i+0.5],color='k'))
+            ax.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
+            ax.add_line(mlines.Line2D([self.maze_size-0.5,self.maze_size-0.5],[i-0.5,i+0.5],color='k'))
+            ax.add_line(mlines.Line2D([i-0.5,i+0.5],[self.maze_size-0.5,self.maze_size-0.5],color='k'))
+
 
 
     def plot_policy(self,fig,ax,v_vector,title,operator,beta):
@@ -296,14 +307,14 @@ class MyMaze():
 
                 for action in range(4):
 
-                    optimal_action = self.optimal_policy[state]
+                    optimal_action = self.optimal_policy[i,j,action]
                     new_state = self.new_state_table[state+(action,)]
 
                     o = [(k==list(state)).all() for k in obstacle]
                     #print(o)
                     if not(empty_obstacle) and (True in o):
                         reward_table[state+(action,)] = -2
-                    elif action==optimal_action:
+                    elif optimal_action:
                         if new_state==end:
                             reward_table[state+(action,)] = 10
                         else:
@@ -400,58 +411,90 @@ class MyMaze():
 
     ##################### ACTOR ###############################################
 
+    def set_graph(self):
 
+        self.env.reset()
 
-    def set_optimal_policy(self,q_table):
-
-        # Sets optimal policy from a given Q-table
-
-        optimal_policy = np.zeros((self.maze_size,self.maze_size),dtype=int)
+        vertex = []
         for i in range(self.maze_size):
             for j in range(self.maze_size):
+                vertex.append(i*self.maze_size+j)
 
-                optimal_policy[i,j] = np.argmax(q_table[tuple([i,j])])
+        connection = {}
+        for v in vertex:
+            c = []
+            for a in range(4):
+                self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size],dtype=int))
+                new_state,_,_,_ = self.env.step(a)
+                lin_state = new_state[0]*self.maze_size+new_state[1]
+                if lin_state!=v:
+                    c.append(lin_state)
 
+            connection[v] = c
 
-        self.optimal_policy = optimal_policy
+        metric_graph = Graph.Graph()
 
-    # def set_optimal_policy(self,q_table):
+        for key in range(self.maze_size*self.maze_size):
 
-    #     vertex = []
-    #     for i in range(self.maze_size):
-    #         for j in range(self.maze_size):
-    #             vertex.append(i*self.maze_size+j)
+            metric_graph.add_node(key)
 
-    #     connection = {}
-    #     for v in vertex:
-    #         c = []
-    #         for a in range(4):
-    #             self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size]))
-    #             new_state,_,_,_ = self.env.step(a)
-    #             lin_state = new_state[0]*self.maze_size+new_state[1]
-    #             if lin_state!=v:
-    #                 c.append(lin_state)
+            for val in connection[key]:
+                metric_graph.add_connection([key,val,1])
 
-    #         connection[v] = c
-
-    #     metric_graph = Graph.Graph()
-
-    #     for key in range(m.maze_size*m.maze_size):#maze_graph:
-
-    #         metric_graph.add_node(key)
-
-    #         for val in maze_graph[key]:
-    #             metric_graph.add_connection([key,val,1])
+        return metric_graph
 
 
-    #     optimal_policy = np.zeros((self.maze_size,self.maze_size))
-    #     for i in range(self.maze_size):
-    #         for j in range(self.maze_size):
 
-    #             if 
-    #             optimal_policy[i,j]
 
-    #     metric_graph.dijkstra_optimal_connections(0,399)
+    def set_optimal_policy(self):
+
+        self.env.reset()
+
+        vertex = []
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
+                vertex.append(i*self.maze_size+j)
+
+        connection = {}
+        for v in vertex:
+            c = []
+            for a in range(4):
+                self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size],dtype=int))
+                new_state,_,_,_ = self.env.step(a)
+                lin_state = new_state[0]*self.maze_size+new_state[1]
+                if lin_state!=v:
+                    c.append(lin_state)
+
+            connection[v] = c
+
+        metric_graph = Graph.Graph()
+
+        for key in range(self.maze_size*self.maze_size):
+
+            metric_graph.add_node(key)
+
+            for val in connection[key]:
+                metric_graph.add_connection([key,val,1])
+
+        optimal_connections = metric_graph.dijkstra_optimal_connections(0,self.maze_size*self.maze_size -1)
+        #print(optimal_connections[0])
+
+        optimal_policy = np.zeros((self.maze_size,self.maze_size,4))
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
+                lin_state = i*self.maze_size + j
+                for a in range(4):
+                    new_state = self.new_state_table[i,j,a]
+                    lin_new_state = new_state[0]*self.maze_size + new_state[1]
+
+                    if lin_state in optimal_connections:
+                        if (lin_new_state in optimal_connections[lin_state]):
+                            optimal_policy[i,j,a] = 1
+
+
+        return optimal_policy
+
+
 
     def select_action_from_q(self,state,q,e):
         e = np.random.rand(1)[0]
@@ -720,7 +763,7 @@ class MyMaze():
                     else:
                         v = v_temp[state]
                         x = []
-                        optimal_action = self.optimal_policy[state]
+
 
                         for a in range(4):
 
@@ -775,7 +818,7 @@ class MyMaze():
         #v_vector[tuple(end)] = 5
 
         self.env.reset()
-        threshold = 1e-5
+        threshold = 1e-3
         err = 2
 
         start = time.time()

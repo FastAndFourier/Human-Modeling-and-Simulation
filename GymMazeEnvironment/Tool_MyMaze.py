@@ -197,7 +197,7 @@ class Metrics():
 
 				matrice_distance[i,j] = self.distance_dijkstra(traj1[i],traj2[j])
 
-		print("Distance matrix computed (",time.time()-start_time,"secondes )")
+		#print("Distance matrix computed (",time.time()-start_time,"secondes )")
 
 		return matrice_distance
 

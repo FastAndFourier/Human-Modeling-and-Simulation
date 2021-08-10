@@ -1,4 +1,4 @@
-aimport pygame
+import pygame
 import time
 
 HEIGHT = 40

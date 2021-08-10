@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 fig_V = plt.figure()
 ax_V = fig_V.gca()
 
-nb_traj = 1
+nb_traj = 40
 
 maze = MyMaze('maze-sample-20x20-v0',reward="human")
 
@@ -125,10 +125,10 @@ for k in range(1,len(res)):
     frechet = np.concatenate((frechet,res[k][2]))
     bias_name = np.concatenate((bias_name,np.array([index[k]]*nb_traj)))
 
-print(length)
-print(dtw)
-print(frechet)
-print(bias_name)
+# print(length)
+# print(dtw)
+# print(frechet)
+# print(bias_name)
 
 #data = {"mean len":mean_len,"std len":std_len,"mean dtw":mean_dtw,"mean frechet dist":mean_frechet}
 #results = pd.DataFrame(data=data)
@@ -138,30 +138,30 @@ print(bias_name)
 
 data = {"Bias":bias_name,"length":length,"DTW":dtw,"Frechet":frechet}
 results = pd.DataFrame(data=data)
-results.pdDataFrame(data=data)
+#results.pdDataFrame(data=data)
 
 print(results)
-#results.to_csv('bias_measures_v2.csv')
+results.to_csv('bias_measures_v4_40demo.csv')
 
-plt.figure()
+# plt.figure()
 
-for k in range(6):
-    ax = plt.subplot(2,3,k+1)
-    ax.imshow(res[k][-1])
-    plt.title(results.index[k])
-    ax.set_xlim(-1,maze.maze_size)
-    ax.set_ylim(maze.maze_size,-1)
-    ax.set_aspect('equal')
+# for k in range(6):
+#     ax = plt.subplot(2,3,k+1)
+#     ax.imshow(res[k][-1])
+#     plt.title(results.index[k])
+#     ax.set_xlim(-1,maze.maze_size)
+#     ax.set_ylim(maze.maze_size,-1)
+#     ax.set_aspect('equal')
 
 
-plt.figure()
+# plt.figure()
 
-for k in range(6,len(res)):
-    ax = plt.subplot(2,3,k-5)
-    ax.imshow(res[k][-1])
-    plt.title(results.index[k])
-    ax.set_xlim(-1,maze.maze_size)
-    ax.set_ylim(maze.maze_size,-1)
-    ax.set_aspect('equal')
+# for k in range(6,len(res)):
+#     ax = plt.subplot(2,3,k-5)
+#     ax.imshow(res[k][-1])
+#     plt.title(results.index[k])
+#     ax.set_xlim(-1,maze.maze_size)
+#     ax.set_ylim(maze.maze_size,-1)
+#     ax.set_aspect('equal')
 
-plt.show()
+# plt.show()
