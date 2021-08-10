@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import cm
 import numpy as np
-#from math import ceil
+
 
 class Metrics():
 

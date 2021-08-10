@@ -11,15 +11,14 @@ MAX_EPISODE = 10000
 MAX_STEP = 500
 MIN_STREAK = MAX_EPISODE
 RENDER = 0
-SIMULATE = 0
-RENDER_TIME = 0.05
+
 
 DETERMINISTIC = True
 
 
 
 
-class MyMaze():
+class MyMaze1():
 
     def __init__(self,env_name,reward,lr=0.05,epsi=0.02,disc=0.99):
 
@@ -32,19 +31,23 @@ class MyMaze():
         self.discount = disc
         self.lr = lr
 
-        
-        self.optimal_policy = []
-        #self.optimal_policy = self.set_optimal_policy()
+        self.metric_graph = self.set_graph( )
+
         self.reward_table = [] 
         self.new_state_table = self.get_new_state()
         self.transition_table = self.get_transition_probalities()
+        self.optimal_policy = self.set_optimal_policy()
         
 
 
     ################# HELPER FUNCTIONS #############################################
 
     def action2str(self,demo):
-        #Turn action index into str
+
+        # Parameter: demo, int in [0,3]
+        # Return: res, str
+
+        # Turns action index into str 
 
         res=[]
         for i in demo:
@@ -59,19 +62,6 @@ class MyMaze():
 
         return res
 
-
-    def compare_traj(self,traj_opti,traj,maze):
-
-        distance_traj = np.zeros((self.maze_size,self.maze_size))
-
-        for k in range(len(traj_opti)):
-
-            state_opti = tuple(traj_opti[k])
-            state = tuple(traj[k])
-
-            distance_traj[tuple(state_opti)] = abs(state_opti[0]-state[0]) + abs(state_opti[1]-state[1])
-
-        return np.transpose(distance_traj)
     
 
     ############### DISPLAY ########################################################
@@ -186,6 +176,17 @@ class MyMaze():
             j=state%self.maze_size
             text = ax.text(i,j, str(traj[i,j])[0:4],ha="center", va="center", color="black")
 
+        _, walls_list = self.edges_and_walls_list_extractor()
+
+        for i in walls_list:
+            ax.add_line(mlines.Line2D([i[1][0]-0.5,i[1][1]-0.5],[i[0][0]-0.5,i[0][1]-0.5],color='k'))
+
+        for i in range(0,self.maze_size):
+            ax.add_line(mlines.Line2D([-0.5,-0.5],[i-0.5,i+0.5],color='k'))
+            ax.add_line(mlines.Line2D([i-0.5,i+0.5],[-0.5,-0.5],color='k'))
+            ax.add_line(mlines.Line2D([self.maze_size-0.5,self.maze_size-0.5],[i-0.5,i+0.5],color='k'))
+            ax.add_line(mlines.Line2D([i-0.5,i+0.5],[self.maze_size-0.5,self.maze_size-0.5],color='k'))
+
 
 
     def plot_policy(self,fig,ax,v_vector,title,operator,beta):
@@ -234,7 +235,12 @@ class MyMaze():
 
     def get_transition_probalities(self):
 
+        # Parameter: None
+        # Return: transition_tab, ndarray of size (number_of_states,number_of_states,number_of_actions)
+
         # Outputs transition matrix T(s,a,s')
+        # DETERMINISTIC = True: Every possible transition as probability 1
+        # DETERMINISTIC = False: Maze exploration for transition probability estimation
 
         transition_tab = np.zeros((self.maze_size*self.maze_size,self.maze_size*self.maze_size,4),dtype=tuple)
 
@@ -284,6 +290,19 @@ class MyMaze():
 
     def set_reward(self,obstacle=[]):
 
+
+        # Parameter: obstacle, ndarray
+        # Output: None
+
+        # Sets human reward table class attribute
+        # Gives reward for taking action a at state s
+
+        # If taking action a at state s bring the agent on one of the optimal paths: 
+        #       reward = 1, 
+        #       -1 otherwise (+10 for reaching final state)
+
+        # Obstacles can be added (reward = -2)
+
         reward_table = np.zeros((self.maze_size,self.maze_size,4))
 
         end = tuple(self.env.observation_space.high)
@@ -296,14 +315,14 @@ class MyMaze():
 
                 for action in range(4):
 
-                    optimal_action = self.optimal_policy[state]
+                    optimal_action = self.optimal_policy[i,j,action]
                     new_state = self.new_state_table[state+(action,)]
 
                     o = [(k==list(state)).all() for k in obstacle]
                     #print(o)
                     if not(empty_obstacle) and (True in o):
                         reward_table[state+(action,)] = -2
-                    elif action==optimal_action:
+                    elif optimal_action:
                         if new_state==end:
                             reward_table[state+(action,)] = 10
                         else:
@@ -312,14 +331,14 @@ class MyMaze():
                         reward_table[state+(action,)] = -1
 
 
-            #time.sleep(0.5)
-
-
         self.reward_table = reward_table
 
     def get_new_state(self):
 
-        # Outputs an array with every new state reached after executing action A from a state S
+        # Parameter: None
+        # Return: new_state_tab, ndarray of size (maze_size,maze_size,number_of_actions)
+
+        # Outputs an array with every new state reached after executing action a from a state s
 
         new_state_tab = np.zeros((self.maze_size,self.maze_size,4),dtype=tuple)
         state = self.env.reset()
@@ -335,7 +354,6 @@ class MyMaze():
                 for a in range(4):
                     self.env.env.reset(state)
                     new_s,r,_,_ = self.env.step(int(a))
-                    #print(state,dic_action[a],new_s)
                     new_state_tab[tuple(state)+(a,)] = tuple(new_s)
 
 
@@ -344,6 +362,13 @@ class MyMaze():
 
 
     def get_entropy_map_v(self,v_table,beta):
+
+        # Parameters: - v_table, ndarray of size (number_of_states,number_of_states)
+        #             - beta, float
+        #
+        # Return: entropy_map, ndarray of size (number_of_states,number_of_states)
+
+        # Outputs entropy map using V-value softmax actor 
 
 
         entropy_map = np.zeros((self.maze_size,self.maze_size),dtype=float)
@@ -381,8 +406,14 @@ class MyMaze():
 
         return entropy_map
 
-    def get_entropy_map_q(self,q_table):
+    def get_entropy_map_q(self,q_table,beta):
 
+        # Parameters: - q_table, ndarray of size (number_of_states,number_of_states)
+        #             - beta, float
+        #
+        # Return: entropy_map, ndarray of size (number_of_states,number_of_states)
+
+        # Outputs entropy map using Q-value softmax actor 
 
         entropy_map = np.zeros((self.maze_size,self.maze_size),dtype=float)
 
@@ -391,7 +422,7 @@ class MyMaze():
 
                 state = tuple([i,j])
                 b = np.max(q_table[state])
-                p = np.exp((q_table[state]-b)*8)/np.sum(np.exp((q_table[state]-b)*8))
+                p = np.exp((q_table[state]-b)*beta)/np.sum(np.exp((q_table[state]-b)*beta))
                 entropy_map[i,j] = -np.sum(p*np.log(p))
 
         return entropy_map
@@ -400,60 +431,116 @@ class MyMaze():
 
     ##################### ACTOR ###############################################
 
+    def set_graph(self):
+
+        # Parameter: None
+        # Return: metric_graph, instance of class Graph (see Graph.hpp and Graph.cpp)
 
 
-    def set_optimal_policy(self,q_table):
+        # Set Maze's graph to compute metrics
 
-        # Sets optimal policy from a given Q-table
+        self.env.reset()
 
-        optimal_policy = np.zeros((self.maze_size,self.maze_size),dtype=int)
+        vertex = []
         for i in range(self.maze_size):
             for j in range(self.maze_size):
+                vertex.append(i*self.maze_size+j)
 
-                optimal_policy[i,j] = np.argmax(q_table[tuple([i,j])])
+        connection = {}
+        for v in vertex:
+            c = []
+            for a in range(4):
+                self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size],dtype=int))
+                new_state,_,_,_ = self.env.step(a)
+                lin_state = new_state[0]*self.maze_size+new_state[1]
+                if lin_state!=v:
+                    c.append(lin_state)
 
+            connection[v] = c
 
-        self.optimal_policy = optimal_policy
+        metric_graph = Graph.Graph()
 
-    # def set_optimal_policy(self,q_table):
+        for key in range(self.maze_size*self.maze_size):
 
-    #     vertex = []
-    #     for i in range(self.maze_size):
-    #         for j in range(self.maze_size):
-    #             vertex.append(i*self.maze_size+j)
+            metric_graph.add_node(key)
 
-    #     connection = {}
-    #     for v in vertex:
-    #         c = []
-    #         for a in range(4):
-    #             self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size]))
-    #             new_state,_,_,_ = self.env.step(a)
-    #             lin_state = new_state[0]*self.maze_size+new_state[1]
-    #             if lin_state!=v:
-    #                 c.append(lin_state)
+            for val in connection[key]:
+                metric_graph.add_connection([key,val,1])
 
-    #         connection[v] = c
-
-    #     metric_graph = Graph.Graph()
-
-    #     for key in range(m.maze_size*m.maze_size):#maze_graph:
-
-    #         metric_graph.add_node(key)
-
-    #         for val in maze_graph[key]:
-    #             metric_graph.add_connection([key,val,1])
+        return metric_graph
 
 
-    #     optimal_policy = np.zeros((self.maze_size,self.maze_size))
-    #     for i in range(self.maze_size):
-    #         for j in range(self.maze_size):
 
-    #             if 
-    #             optimal_policy[i,j]
 
-    #     metric_graph.dijkstra_optimal_connections(0,399)
+    def set_optimal_policy(self):
+
+        # Parameter: None
+        # Return: optimal_policy, ndarray of size (number_of_states,number_of_states,number_of_aactions)
+
+        # Sets optimal policy:
+        # If action A taken at state S lead to a state S1 located on one of the optimal paths, then 
+        #   --> optimal_policy[S_row,S_column,A] = 1
+        #   --> = 0 otherwise 
+
+        self.env.reset()
+
+        vertex = []
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
+                vertex.append(i*self.maze_size+j)
+
+        connection = {}
+        for v in vertex:
+            c = []
+            for a in range(4):
+                self.env.env.reset(np.array([v//self.maze_size,v%self.maze_size],dtype=int))
+                new_state,_,_,_ = self.env.step(a)
+                lin_state = new_state[0]*self.maze_size+new_state[1]
+                if lin_state!=v:
+                    c.append(lin_state)
+
+            connection[v] = c
+
+        metric_graph = Graph.Graph()
+
+        for key in range(self.maze_size*self.maze_size):
+
+            metric_graph.add_node(key)
+
+            for val in connection[key]:
+                metric_graph.add_connection([key,val,1])
+
+        # optimal_connections = metric_graph.dijkstra_optimal_connections(0,self.maze_size*self.maze_size -1)
+        optimal_connections = metric_graph.optimal_connections_full_graph(self.maze_size*self.maze_size -1)
+        #print(optimal_connections[0])
+
+        optimal_policy = np.zeros((self.maze_size,self.maze_size,4))
+        for i in range(self.maze_size):
+            for j in range(self.maze_size):
+                lin_state = i*self.maze_size + j
+                for a in range(4):
+                    new_state = self.new_state_table[i,j,a]
+                    lin_new_state = new_state[0]*self.maze_size + new_state[1]
+
+                    if lin_state in optimal_connections:
+                        if (lin_new_state in optimal_connections[lin_state]):
+                            optimal_policy[i,j,a] = 1
+
+
+        return optimal_policy
+
+
 
     def select_action_from_q(self,state,q,e):
+
+        # Parameters: - state, list or tuple of length 2
+        #             - q, ndarray of size (number_of_states,number_of_states,number_of_actions)
+        #             - e, float 
+
+        # Return: action, integer in [0,3]
+
+        # Epsilon-greedy actor for q-learning
+
         e = np.random.rand(1)[0]
         epsi = self.get_epsilon(e)
         if e < self.epsilon:
@@ -465,7 +552,15 @@ class MyMaze():
 
     def select_action_from_v(self,state,v,reward_type,operator,beta):
 
-        # Selects action following a policy given a Value-function v
+        # Parameters: - state, list or tuple of length 2
+        #             - v, ndarray of size (number_of_states,number_of_states)
+        #             - reward_type, string wether "env" or "human"
+        #             - operator, string wether "softmax" or "argmax"
+        #             - beta, float (for softmax actor only)
+
+
+
+        # Selects action following a policy given a Value-function
 
         # -> reward_type: either "env" (reward given by GymMaze = -1/num_tile for every step) 
         #                 or "human" (+1 if action=optimal_action, -1 otherwise)
@@ -522,9 +617,13 @@ class MyMaze():
 
     def generate_traj_v(self,v,operator,beta,max_step):
 
+        # Parameters: - v, ndarray of size (number_of_states,number_of_states)
+        #             - operator, String ("argmax" or "softmax")
+        #             - beta, float ("softmax" actor only)
+        #             - max_step, integer
+
         # Generates trajectory following a policy derived from value function v
-        # If RENDER=True, the trajectory is displayed on the GymMaze graphical environment
-        # Also, if RENDER=TRUE, the entropy of expected rewards distribution at each step is displayed 
+   
 
         done=False
         obv = self.env.env.reset([0,0])
@@ -534,8 +633,6 @@ class MyMaze():
         entropy = []
         traj = []
         traj.append(list(s))
-
-        #self.env.render()
 
         while not(done) and it<max_step:
 
@@ -656,9 +753,9 @@ class MyMaze():
             state=tuple(new_state)
             a.append(noisy_behaviour)
 
-            if RENDER:
-                self.env.render()
-                time.sleep(RENDER_TIME)
+            # if RENDER:
+            #     self.env.render()
+            #     time.sleep(RENDER_TIME)
 
         return a
 
@@ -720,7 +817,7 @@ class MyMaze():
                     else:
                         v = v_temp[state]
                         x = []
-                        optimal_action = self.optimal_policy[state]
+
 
                         for a in range(4):
 
@@ -775,7 +872,7 @@ class MyMaze():
         #v_vector[tuple(end)] = 5
 
         self.env.reset()
-        threshold = 1e-5
+        threshold = 1e-3
         err = 2
 
         start = time.time()
