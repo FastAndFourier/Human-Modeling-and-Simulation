@@ -9,20 +9,20 @@ import numpy as np
 
 class Metrics():
 
-	def __init__(self,m,qtab,nb_traj,max_step,beta):
+	def __init__(self,m,qtab):
 
 		self.maze = m
-		self.graph = self.get_graph()
+		#self.graph = self.get_graph()
 		self.optimal_path = self.get_optimal_path(self.maze.v_from_q(qtab))
-		self.nb_traj = nb_traj
-		self.max_step = max_step
-		self.beta_actor = beta
+		#self.nb_traj = nb_traj
+		#self.max_step = max_step
+		#self.beta_actor = beta
 
 
 
 	########### CORE EVALUATION FUNCTION ################################
 
-	def evaluate(self,v_vector,operator,beta):
+	def evaluate(self,v_vector,operator,beta,nb_traj,max_step):
 
 		traj_map = np.zeros((self.maze.maze_size,self.maze.maze_size),dtype=int)
 		length_list = []
@@ -35,7 +35,7 @@ class Metrics():
 
 
 		#for epoch in tqdm(range(self.nb_traj)):
-		for epoch in range(self.nb_traj):
+		for epoch in range(nb_traj):
 
 			epoch_traj_map = np.zeros((self.maze.maze_size,self.maze.maze_size),dtype=int)
 			self.maze.env.reset()
@@ -43,46 +43,44 @@ class Metrics():
 			traj_map[tuple(state)]+=1
 			epoch_traj_map[tuple(state)]+=1
 			traj = []
-			traj.append(list(state))
+			traj.append(state)
 			length = 0
 		    
-			while (self.maze.env.state!=self.maze.env.observation_space.high).any() and length < self.max_step:
+			while (self.maze.env.state!=self.maze.env.observation_space.high).any() and length < max_step:
 
 				action = self.maze.select_action_from_v(state,v_vector,self.maze.reward_type,operator,beta)[0]
 				new_s,reward,done,_ = self.maze.env.step(int(action))
 				state = new_s
-				traj.append(list(state))
+				traj.append(tuple(state))
 				traj_map[tuple(state)]+=1
 				epoch_traj_map[tuple(state)]+=1
 				length+=1
 
-			matrice_distance = self.distance_matrix_dijstra(traj,self.optimal_path)
+			#matrice_distance = self.distance_matrix_dijstra(traj,self.optimal_path)
 
+			lin_traj = self.maze.sub2lin_traj(traj)
+			lin_traj_opti = self.maze.sub2lin_traj(self.optimal_path)
 
-			dtw_list.append(distanceDTW(traj,self.optimal_path,matrice_distance))
-			frechet_list.append(distanceFrechet(traj,self.optimal_path,matrice_distance))
+			dtw_list.append(self.maze.metric_graph.dtw(lin_traj,lin_traj_opti))
+			frechet_list.append(self.maze.metric_graph.frechet(lin_traj,lin_traj_opti))
 			length_list.append(length)
-			mean_step_per_tile.append((epoch_traj_map[epoch_traj_map!=0]).mean())
+
+			print(epoch+1,"epochs out of",nb_traj)
+
+			#print(dtw_list,frechet_list,length)
 
 
-		print("Step per tile",mean_step_per_tile)
-		print("Mean step per tile",np.array(mean_step_per_tile).mean())
+			# dtw_list.append(distanceDTW(traj,self.optimal_path,matrice_distance))
+			# frechet_list.append(distanceFrechet(traj,self.optimal_path,matrice_distance))
+			# length_list.append(length)
+			# mean_step_per_tile.append((epoch_traj_map[epoch_traj_map!=0]).mean())
+
+
+		#print("Step per tile",mean_step_per_tile)
+		#print("Mean step per tile",np.array(mean_step_per_tile).mean())
 		#return int(np.array(length_list).mean()),int(np.array(length_list).std()), int(np.array(dtw_list).mean()), np.array(frechet_list).mean(), np.transpose(traj_map)
 		return np.array(length_list), np.array(dtw_list), np.array(frechet_list), np.transpose(traj_map)
 
-
-	# def compare_traj(self,traj):
-
-	#     distance_traj = np.zeros((self.maze.maze_size,self.maze.maze_size))
-
-	#     for k in range(len(traj)):
-
-	#         state_opti = tuple(traj_opti[k])
-	#         state = tuple(traj[k])
-
-	#         distance_traj[tuple(state_opti)] = abs(state_opti[0]-state[0]) + abs(state_opti[1]-state[1])
-
-	#     return np.transpose(distance_traj)
 
 	############# HELPER FUNCTIONS ######################################
 
@@ -205,7 +203,7 @@ class Metrics():
 
 	############### TRAJ COMPARAISON ###############################################
 
-	def compare_traj_map(self,maze1,optimal_traj,v_bias,beta,nb_demo,title):
+	def compare_traj_map(self,maze1,optimal_traj,v_bias,beta,nb_demo,max_step,title):
 	
 
 		# Trajectory map optimal demonstration
@@ -230,7 +228,7 @@ class Metrics():
 		traj_map = np.zeros((maze1.maze_size,maze1.maze_size))
 
 		for k in range(nb_demo):
-			traj = maze1.generate_traj_v(v_bias,"softmax",beta,self.max_step)[1]
+			traj = maze1.generate_traj_v(v_bias,"softmax",beta,max_step)[1]
 			for t in traj:
 				lin_t = t[0]*maze1.maze_size + t[1]			
 				total_lin_traj.append(lin_t)

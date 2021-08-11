@@ -18,7 +18,7 @@ DETERMINISTIC = True
 
 
 
-class MyMaze1():
+class MyMaze():
 
     def __init__(self,env_name,reward,lr=0.05,epsi=0.02,disc=0.99):
 
@@ -62,7 +62,13 @@ class MyMaze1():
 
         return res
 
-    
+    def sub2lin_traj(self,traj):
+
+        lin_traj = []
+        for state in traj:
+            lin_traj.append(state[0]*self.maze_size+state[1])
+
+        return lin_traj
 
     ############### DISPLAY ########################################################
 
