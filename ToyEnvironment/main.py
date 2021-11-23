@@ -3,9 +3,12 @@ from Grid import *
 from boltzmann_rational import *
 from irrational_behavior import *
 import numpy as np
+from time import sleep
+import pygame
 
 print("Environment 1 initialization (boltzmann noisy-rational and irrational bias) ... \n")
 oox = grid([5,6])
+init_start = oox.start
 oox.add_end([2,5])
 oox.add_danger([2,4])
 oox.add_danger([2,3])
@@ -14,137 +17,104 @@ oox.add_danger([4,4])
 oox.add_danger([4,3])
 oox.add_danger([4,2])
 oox.add_danger([4,1])
+oox.render()
 
-oox.print_env()
 
 step_, err_ = oox.q_learning(50,50000)
+oox.reset(init_start)
 
-vi = value_iterate(oox)
-
-print("Trajectories Boltzmann VI :")
-beta = [0,0.5,1,10]
-for b in beta:
-    vB = boltz_rational(oox,b)
-    print(vB)
-    print("Beta = ",b," :",end=" ")
-    generate_traj_v(oox,vB,[3,3])
-    print("\n")
-
-print("\nTrajectories Boltzmann noisy-rational :")
-beta = [10000,2,0.1,0.02]
-for b in beta:
-    print("Beta = ",1/b," :",end=" ")
-    demo, start_ = boltz_rational_noisy(oox,b,1,[3,3])
-    oox.reset([3,3])
-    print("Start =",start_,"-> ",len(demo[0]),"iterations",end="")
-    print(action2str(demo[0]),"\n")
+demo_action, _, _ = boltz_rational_noisy(oox,0.1,1,oox.start)
 
 
-print("\n\nEnvironment 2 initialization (prospect bias) (...\n")
+oox.reset(init_start)
+for action in demo_action[0]:
+    new_state, reward, done = oox.step(action)
+    oox.state = new_state
+    oox.render()
+    sleep(.5)
 
-grid1 = grid([5,5])
-grid1.add_end([0,4])
+run = True
+while run:
+    pygame.time.delay(100)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+pygame.quit()
 
-# for i in range(2):
-#     for j in range(1,3):
-#         grid1.add_danger([i,j])
-#
-# for i in range(1,2):
-#     for j in range(2,4):
-#         grid1.add_danger([i,j])
+    
+    
 
-grid1.add_danger([0,1])
-grid1.add_danger([0,2])
-grid1.add_danger([1,1])
-grid1.add_danger([1,2])
-grid1.add_danger([2,2])
-grid1.add_danger([3,2])
-grid1.add_danger([3,3])
+# vi = value_iterate(oox)
 
-grid1.print_env()
+# print("Trajectories Boltzmann VI :")
+# beta = [0,0.5,1,10]
+# for b in beta:
+#     vB = boltz_rational(oox,b)
+#     print(vB)
+#     print("Beta = ",b," :",end=" ")
+#     generate_traj_v(oox,vB,[3,3])
+#     print("\n")
 
-step_, err_ = grid1.q_learning(50,50000)
+# print("\nTrajectories Boltzmann noisy-rational :")
+# beta = [10000,2,0.1,0.02]
+# for b in beta:
+#     print("Beta = ",1/b," :",end=" ")
+#     demo, start_ = boltz_rational_noisy(oox,b,1,[3,3])
+#     oox.reset([3,3])
+#     print("Start =",start_,"-> ",len(demo[0]),"iterations",end="")
+#     print(action2str(demo[0]),"\n")
 
-print("Prospect bias :")
-vP = prospect_bias(grid1,4)
-vP1 = prospect_bias(grid1,5)
-print("\n")
-generate_traj_v(grid1,vP,[0,0])
-generate_traj_v(grid1,vP1,[0,0])
 
-print("\n\nEnvironment 3 initialization (extremal)...\n")
+# print("\n\nEnvironment 2 initialization (prospect bias) (...\n")
 
-grid2 = grid([5,5])
-grid2.add_end([1,4])
-for i in [1,2]:
-    for j in [1,2]:
-        grid2.add_danger([i,j])
-grid2.add_danger([0,1])
-grid2.add_danger([3,1])
-grid2.add_danger([4,3])
-grid2.print_env()
-
-step_, err_ = grid2.q_learning(200,50000)
+# grid1 = grid([5,5])
+# grid1.add_end([0,4])
 
 
 
-print("\nExtremal :")
-vE = extremal(grid2,0)
-vE1 = extremal(grid2,1)
+# grid1.add_danger([0,1])
+# grid1.add_danger([0,2])
+# grid1.add_danger([1,1])
+# grid1.add_danger([1,2])
+# grid1.add_danger([2,2])
+# grid1.add_danger([3,2])
+# grid1.add_danger([3,3])
 
-print("\n")
-generate_traj_v(grid2,vE,[0,0])
-generate_traj_v(grid2,vE1,[0,0])
+# grid1.print_env()
 
-
-"""
-plt.plot(err_)
-plt.title("Temporal difference")
-plt.show()
+# step_, err_ = grid1.q_learning(50,50000)
 
 
-n_demo = 10
-tau = 0.02
 
-oox.reset([3,3])
-oox.reset(oox.start)
-oox.print_env()
+# print("Prospect bias :")
+# vP = prospect_bias(grid1,4)
+# vP1 = prospect_bias(grid1,5)
+# print("\n")
+# generate_traj_v(grid1,vP,[0,0])
+# generate_traj_v(grid1,vP1,[0,0])
 
-print("Tau = 0.02")
-demonstration,start_= boltz_rational_noisy(oox,tau,n_demo,oox.start)
-print("Mean demonstration length =",sum([np.size(s) for s in demonstration ])//n_demo)
-print("Std demonstration length =",np.std([np.size(s) for s in demonstration ]))
+# print("\n\nEnvironment 3 initialization (extremal)...\n")
 
-oox.reset(oox.start)
-oox.print_env()
-print("Start =",start_,end="\n\n")
-for k in range(n_demo):
-    print("  * Demonstration #",k+1,"=",action2str(demonstration[k]))
+# grid2 = grid([5,5])
+# grid2.add_end([1,4])
+# for i in [1,2]:
+#     for j in [1,2]:
+#         grid2.add_danger([i,j])
+# grid2.add_danger([0,1])
+# grid2.add_danger([3,1])
+# grid2.add_danger([4,3])
+# grid2.print_env()
 
-
-print("\nTau = 0.1")
-tau=0.1
-demonstration,start_= boltz_rational_noisy(oox,tau,n_demo,oox.start)
-print("Mean demonstration length =",sum([np.size(s) for s in demonstration ])//n_demo)
-print("Std demonstration length =",np.std([np.size(s) for s in demonstration ]))
-
-# oox.reset(oox.start)
-# oox.print_env()
-# print("Start =",start_,end="\n\n")
-# for k in range(n_demo):
-#     print("  * Demonstration #",k+1,"=",action2str(demonstration[k]))
+# step_, err_ = grid2.q_learning(200,50000)
 
 
-print("\nTau = 1")
-tau=1
-demonstration,start_= boltz_rational_noisy(oox,tau,n_demo,oox.start)
-print("Mean demonstration length =",sum([np.size(s) for s in demonstration ])//n_demo)
-print("Std demonstration length =",np.std([np.size(s) for s in demonstration ]))
 
-# oox.reset(oox.start)
-# oox.print_env()
-# print("Start =",start_,end="\n\n")
-# for k in range(n_demo):
-#     print("  * Demonstration #",k+1,"=",action2str(demonstration[k]))
+# print("\nExtremal :")
+# vE = extremal(grid2,0)
+# vE1 = extremal(grid2,1)
 
-"""
+# print("\n")
+# generate_traj_v(grid2,vE,[0,0])
+# generate_traj_v(grid2,vE1,[0,0])
+
+

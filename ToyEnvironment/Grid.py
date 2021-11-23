@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+import pygame
 
 ############# HELPER FUNCTIONS #################################################
 
@@ -31,17 +32,22 @@ class grid:
     def __init__(self,s):
         #Initialization of the grid environment and the q_learning objects and parameters
         self.size = s
+
         self.value_end = 10
         self.value_danger = -10
         self.value_safe = -1
+
         self.tab = self.value_safe*np.ones((self.size[0],self.size[1]))#np.zeros((self.size[0],self.size[1]))
         self.start = [0,0]
         self.end = [self.size[0],self.size[1]]
         self.state = self.start
+
         self.q_table = np.zeros((4,self.size[0]*self.size[1]))
+
         self.discount=0.99
         self.lr = 0.1
         self.epsilon=0.1
+
 
 
 
@@ -102,7 +108,7 @@ class grid:
         self.start=sub2ind(self.size[1],np.random.randint(0,self.size[0]*self.size[1]))
         self.state=[self.start[0],self.start[1]]
 
-    # Reset at a specific position, e.g, for comparaison of noisy-rational demonstration
+    # Reset at a specific position, e.g, for comparaison of noisy-rational demonstrations
     def reset(self,start):
         self.start=start
         self.state=start
@@ -130,13 +136,11 @@ class grid:
 
     def update_q(self,a,s,s1,r,done):
 
-        #print(s,s1,a)
         s = ind2sub(self.size[1],s)
         s1 = ind2sub(self.size[1],s1)
 
         if done:
             td = r - self.q_table[a,s]
-            #print("IN")
         else:
             td = r + self.discount*np.max(self.q_table[:,s1]) - self.q_table[a,s]
 
@@ -151,7 +155,6 @@ class grid:
         n_step=[]
         err_=[]
 
-        init_lr = self.lr
 
         for e in tqdm(range(nb_episode+1)):
             k=0
@@ -167,12 +170,10 @@ class grid:
                 if epsi < self.epsilon:
                     action = np.random.randint(0,4)
                 else:
-                    #ind_max = np.where(self.q_table[:,ind2sub(self.size[1],self.state)]==np.max(self.q_table[:,ind2sub(self.size[1],self.state)]))[0]
-                    #action = np.random.choice(ind_max)
                     action = np.argmax(self.q_table[:,ind2sub(self.size[1],self.state)])
 
                 [new_state, reward, done] = self.step(action)
-                #print(self.state,new_state,action)
+                
                 err = self.update_q(action,self.state,new_state,reward,done)
 
                 self.state = new_state
@@ -183,3 +184,47 @@ class grid:
 
 
         return n_step, err_
+
+    def render(self):
+
+        pygame.init()
+
+        blockSize = 50 
+
+        HEIGHT = self.size[1]*blockSize
+        WIDTH = self.size[0]*blockSize
+
+        win = pygame.display.set_mode((HEIGHT,WIDTH))
+        pygame.display.set_caption("Grid")
+
+        win.fill((255,255,255))
+
+        #Draw grid
+        
+        for x in range(0, HEIGHT, blockSize):
+            for y in range(0, WIDTH, blockSize):
+                rect = pygame.Rect(x, y, blockSize, blockSize)
+                pygame.draw.rect(win, [0,0,0], rect, 1)
+
+        #Fill grid
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
+
+                #print()
+
+                if [x,y] == self.start:
+                    rect = pygame.Rect(y*blockSize+2, x*blockSize+2, blockSize-4, blockSize-4)
+                    pygame.draw.rect(win, [0,0,255], rect)
+                elif self.tab[x,y] == 10:
+                    rect = pygame.Rect(y*blockSize+2, x*blockSize+2, blockSize-4, blockSize-4)
+                    pygame.draw.rect(win, [0,255,0], rect)
+                elif self.tab[x,y] == -10:
+                    rect = pygame.Rect(y*blockSize+2, x*blockSize+2, blockSize-4, blockSize-4)
+                    pygame.draw.rect(win, [100,100,100], rect)
+
+        pygame.draw.circle(win, [255,0,0], [self.state[1]*blockSize+blockSize//2,self.state[0]*blockSize+blockSize//2],blockSize//4)
+
+        pygame.display.update()
+
+
+        return win
