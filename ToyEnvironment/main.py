@@ -8,6 +8,12 @@ import pygame
 
 print("Environment 1 initialization (boltzmann noisy-rational and irrational bias) ... \n")
 oox = grid([5,6])
+
+blockSize = 50 
+
+HEIGHT = oox.size[1]*blockSize
+WIDTH = oox.size[0]*blockSize
+
 init_start = oox.start
 oox.add_end([2,5])
 oox.add_danger([2,4])
@@ -20,28 +26,24 @@ oox.add_danger([4,1])
 oox.render()
 
 
-step_, err_ = oox.q_learning(50,50)
+step_, err_ = oox.q_learning(50,5000)
 oox.display_qtable()
 
 oox.reset(init_start)
 
-demo_action, _, _ = boltz_rational_noisy(oox,0.1,1,oox.start)
+demo_action, _, _ = boltz_rational_noisy(oox,1,1,oox.start)
 
 
 oox.reset(init_start)
 for action in demo_action[0]:
     new_state, reward, done = oox.step(action)
     oox.state = new_state
-    oox.render()
+    _, run = oox.render()
+    if not(run):
+        break
     sleep(.5)
 
-run = True
-while run:
-    pygame.time.delay(100)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-pygame.quit()
+
 
     
     

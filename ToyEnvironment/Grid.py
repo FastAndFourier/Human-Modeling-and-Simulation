@@ -1,6 +1,8 @@
 import numpy as np
 from tqdm import tqdm
 import pygame
+import matplotlib.pyplot as plt
+#from matplotlib.lines import Line2D
 
 ############# HELPER FUNCTIONS #################################################
 
@@ -194,7 +196,7 @@ class grid:
         HEIGHT = self.size[1]*blockSize
         WIDTH = self.size[0]*blockSize
 
-        win = pygame.display.set_mode((HEIGHT,WIDTH))
+        win = pygame.display.set_mode((HEIGHT,WIDTH),pygame.RESIZABLE)
         pygame.display.set_caption("Grid")
 
         win.fill((255,255,255))
@@ -226,5 +228,65 @@ class grid:
 
         pygame.display.update()
 
+        run = True
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
 
-        return win
+
+        return win, run 
+
+    def display_qtable(self):
+
+        fig, ax = plt.subplots(1)
+        img = 255*np.ones((self.size[1]*2,self.size[0]*2,3))
+        
+
+        dl = 0.25
+        width = 0.1
+
+
+        for k in range(self.size[0]):
+            for l in range(self.size[1]):
+
+                # if [k,l] == [0,0]:
+                #     print("IN")
+                #     img[0:2,0:1,:] = [0,255,0]
+                    
+                # if self.tab[k,l] == -10:
+                #     img[l:l+2,k:k+2,:] = [100,100,100]
+
+
+                # if [k,l] == self.end:
+                #     img[k*2+1:k*2+3,l*2-2:l*2,:] = [0,255,0]
+                #     continue
+
+                action = np.argmax(self.q_table[:,k*self.size[1]+l])
+                if action == 0:
+                    plt.arrow(2*l+1,2*k+1,0,-dl,width=width)
+                elif action == 1:
+                    plt.arrow(2*l+1,2*k+1,-dl,0,width=width)
+                elif action == 2:
+                    plt.arrow(2*l+1,2*k+1,0,dl,width=width)
+                else:
+                    plt.arrow(2*l+1,2*k+1,dl,0,width=width)
+
+        ax.set_aspect('equal')
+        ax.set_xlim(0,self.size[1]*2)
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        extent = (0, self.size[1]*2, self.size[0]*2, 0)
+        ax.imshow(img,extent=extent)
+        ax.grid()
+        #ax.imshow(self.grid_img,extent=extent)
+
+        plt.show()
+
+
+        
+
+
+
+
