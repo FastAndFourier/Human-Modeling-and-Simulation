@@ -20,7 +20,9 @@ oox.add_danger([4,1])
 oox.render()
 
 
-step_, err_ = oox.q_learning(50,50000)
+step_, err_ = oox.q_learning(50,50)
+oox.display_qtable()
+
 oox.reset(init_start)
 
 demo_action, _, _ = boltz_rational_noisy(oox,0.1,1,oox.start)
